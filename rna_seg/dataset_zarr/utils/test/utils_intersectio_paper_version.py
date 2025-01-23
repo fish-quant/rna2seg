@@ -1,0 +1,376 @@
+
+
+import geopandas as gpd
+import shapely
+import spatialdata as sd
+from sopa._sdata import get_spatial_image, save_shapes
+from spatialdata.models import ShapesModel
+from spatialdata.transformations import get_transformation
+from shapely.validation import explain_validity
+from tqdm import tqdm
+import numpy as np
+
+# todo complete this fonction and add it into the compute_consistent_cell function
+def compute_polygon_intersection(list_polygon_patch, list_polygon_annotation):
+    tree = shapely.STRtree(list_polygon_patch)
+    conflicts = tree.query(list_polygon_annotation, predicate="intersects")
+    return conflicts
+
+
+def compute_consistent_cell(
+        sdata,
+        key_shape_cell_seg="Cellbound1",
+        key_shape_nuclei_seg = "cellpose_boundaries2",
+        key_cell_consistent = "cell_consistent",
+        key_nuclei_consistent = "nuclei_consistent",
+        key_cell_consistent_without_nuclei = None,
+        key_nuclei_consistent_not_in_cell = None,
+        key_unconsistent_cell = None,
+        image_key = "HumanBreastCancerPatient1_small_merfish_z3",
+        threshold_intersection_contain = 0.95,
+        threshold_intersection_intersect = None,
+        accepted_nb_nuclei_per_cell=None,
+        max_cell_nb_intersecting_nuclei=1,
+        return_polygon_index=False,
+):
+
+    """
+    Args:
+        key_shape_nuclei_seg: key of the nuclei segmentation in sdata.shapes
+        key_shape_cell_seg: key of the cell segmentation in sdata.shapes
+        key_cell_consistent: key of the consistent cell in sdata.shapes
+        key_nuclei_consistent: key of the consistent nuclei in sdata.shapes
+        image_key: key of the image in sdata.images
+        threshold_intersection_contain: a cell is considered as containing a nuclei if
+        cell.intersection(nucleus).area >= threshold_intersection * nucleus.area
+        It can be interpreted as the proportion of the nuclei need to be inside the cell for the (cell, nuclei) pair to be considered consistent
+        accepted_nb_nuclei_per_cell: set of accepted number of nuclei per cell. If None, only one nucleus per cell is accepted. if {0,1} then only cell with 0 or 1 nucleus are accepted
+        threshold_intersection_intersect: threshold of intersection apply as follow :
+        a cell is considered as in the intersection with a nuclei if cell.intersection(nucleus).area >= threshold_intersection_intersect * nucleus.area
+    Returns:
+    """
+
+    if threshold_intersection_intersect is None:
+        threshold_intersection_intersect = 1 - threshold_intersection_contain
+    if accepted_nb_nuclei_per_cell is None:
+        accepted_nb_nuclei_per_cell = {1}
+    list_cell = list(sdata[key_shape_cell_seg].geometry) # can be optimise ssee read_patches_cells sopa function ?
+    list_nuclei = list(sdata[key_shape_nuclei_seg].geometry) # can be optimise ssee read_patches_cells sopa function ?
+
+    (cell_consistent, nuclei_consistent, cell_consistent_without_nuclei,
+     nuclei_consistent_not_in_cell, list_polygon_cell_unconsistent, dict_polygon_index) = calculate_consistent_cells(
+        list_polygon_cell=list_cell,
+        list_polygon_nuclei=list_nuclei,
+        threshold_intersection_contain=threshold_intersection_contain,
+        accepted_nb_nuclei_per_cell=accepted_nb_nuclei_per_cell,
+        threshold_intersection_intersect=threshold_intersection_intersect,
+        max_cell_nb_intersecting_nuclei=max_cell_nb_intersecting_nuclei,
+    )
+    dict_polygon_index["index_all_polygon"]  = list(range(len(list_cell)))
+    dict_polygon_index["list_cell_polygon"] = list_cell
+
+    if len(cell_consistent) == 0:
+        raise ValueError("No consistent cell found")
+
+
+    ### add the consistante cells and nuclei to the spatialdata
+
+
+    def _save_consistent_cell(sdata, list_polygon, image_key, key_consistent):
+        image = get_spatial_image(sdata, image_key)
+        geo_df = gpd.GeoDataFrame({"geometry": list_polygon})
+        geo_df.index = image_key + geo_df.index.astype(str)
+        geo_df = ShapesModel.parse(
+            geo_df, transformations=get_transformation(image, get_all=True).copy()
+        )
+        sdata.shapes[key_consistent] = geo_df
+
+    _save_consistent_cell(sdata=sdata,
+                          list_polygon = cell_consistent,
+                          image_key = image_key,
+                          key_consistent = key_cell_consistent)
+    if key_nuclei_consistent is not None:
+        _save_consistent_cell(sdata=sdata,
+                              list_polygon = nuclei_consistent,
+                              image_key = image_key,
+                              key_consistent =  key_nuclei_consistent)
+
+    if key_cell_consistent_without_nuclei is not None:
+        _save_consistent_cell(sdata=sdata,
+                              list_polygon = cell_consistent_without_nuclei,
+                              image_key = image_key,
+                              key_consistent = key_cell_consistent_without_nuclei)
+
+    if key_nuclei_consistent_not_in_cell is not None:
+        _save_consistent_cell(sdata=sdata,
+                              list_polygon = nuclei_consistent_not_in_cell,
+                              image_key = image_key,
+                              key_consistent = key_nuclei_consistent_not_in_cell)
+    if key_unconsistent_cell is not None:
+        _save_consistent_cell(sdata=sdata,
+                              list_polygon = list_polygon_cell_unconsistent,
+                              image_key = image_key,
+                              key_consistent = key_unconsistent_cell)
+    ###todo save cell consitenst without nuclei
+    if return_polygon_index:
+        return sdata, dict_polygon_index
+    else:
+        return sdata
+
+
+def calculate_consistent_cells(list_polygon_cell,
+                               list_polygon_nuclei,
+                               threshold_intersection_contain=0.95,
+                               accepted_nb_nuclei_per_cell=None,
+                               threshold_intersection_intersect=None,
+                               max_cell_nb_intersecting_nuclei=1,
+                               ):
+
+    assert 0 not in accepted_nb_nuclei_per_cell, "0 is not an accepted number of nuclei per cell"
+    if accepted_nb_nuclei_per_cell is None:
+        accepted_nb_nuclei_per_cell = {1}
+    if threshold_intersection_intersect is None:
+        threshold_intersection_intersect = 1 - threshold_intersection_contain
+
+    n_cells = len(list_polygon_cell)
+    n_nuclei = len(list_polygon_nuclei)
+    list_all_cell = list_polygon_cell + list_polygon_nuclei
+    tree = shapely.STRtree(list_all_cell)
+    conflicts = tree.query(list_all_cell, predicate="intersects")
+    conflicts = conflicts[:, conflicts[0] != conflicts[1]].T
+
+    cell_indice_to_keep  =  {} # key cell , value set of nuclei indice inside the cell
+    cell_indice_to_remove = {} # key cell, value set of nuclei indice inside the cell
+    nuclei_intersecting_cells = {} # key nuclei, value set of cell indice intersecting the nuclei
+
+    ## initialize the cell_indice_to_keep
+    for i in range(n_cells):
+        cell_indice_to_keep[i] = set()
+        cell_indice_to_remove[i] = set()
+
+    for i in range(n_nuclei):
+        nuclei_intersecting_cells[i] = set()
+
+    for i, (i1, i2) in tqdm(enumerate(conflicts), desc="Resolving conflicts"):
+        if i1 == i2: # same polygon
+            continue
+        if i1 < n_cells and i2 < n_cells: # both polygons are cells
+            continue
+        if i1 >= n_cells and i2 >= n_cells: # both polygons are nuclei
+            continue
+        if i1 < i2:
+            cell_index_all, nucleus_index_all = i1, i2
+        else:
+            nucleus_index_all, cell_index_all = i1, i2
+        cell, nucleus = list_all_cell[cell_index_all], list_all_cell[nucleus_index_all]
+
+        if not cell.is_valid:
+            print(f"Cell invalid: {explain_validity(cell)}")
+            cell = cell.buffer(0)
+            assert cell.is_valid
+        if not nucleus.is_valid:
+            print(f"Nucleus invalid: {explain_validity(nucleus)}")
+            nucleus = nucleus.buffer(0)
+            assert nucleus.is_valid
+
+        if cell.contains(nucleus):
+            cell_indice_to_keep[cell_index_all].add(nucleus_index_all - n_cells)
+        elif threshold_intersection_contain > 0:
+            cell_nuc_inter = cell.intersection(nucleus).area / nucleus.area
+            if cell_nuc_inter >= threshold_intersection_contain:
+                cell_indice_to_keep[cell_index_all].add(nucleus_index_all - n_cells)
+            else:
+                if cell_nuc_inter > threshold_intersection_intersect:
+                    cell_indice_to_remove[cell_index_all].add(nucleus_index_all - n_cells)
+                    nuclei_intersecting_cells[nucleus_index_all - n_cells].add(cell_index_all)
+
+    ## compute consistent nuclei
+    #nb_cell_per_nuclei = [len(cell_indice_to_keep[cell]) for cell in range(n_cells, len(list_all_cell))]
+
+    # remove cell that have many nuclei inside
+    cell_consistent_with_nuclei = [cell for cell in cell_indice_to_keep if len(cell_indice_to_keep[cell]) in accepted_nb_nuclei_per_cell]
+    ## remove cell that have "unconsistent" nuclei
+    cell_set2remove = set([cell for cell in cell_indice_to_remove if len(cell_indice_to_remove[cell])>0])
+    cell_consistent_with_nuclei = list(set(cell_consistent_with_nuclei) - cell_set2remove)
+
+    ### get cell without nuclei
+
+    ## keep cell that contain no nuclei
+    cell_consistent_without_nuclei =  [cell for cell in cell_indice_to_keep if len(cell_indice_to_keep[cell]) in [0]]
+
+    ## keep cell that have no nuclei intersecting
+    cell_consistent_without_nuclei = list(set(cell_consistent_without_nuclei) - cell_set2remove)
+
+    set_all_cell_consistent = set(cell_consistent_with_nuclei).union(set(cell_consistent_without_nuclei))
+    assert len(set(cell_consistent_with_nuclei).intersection(set(cell_consistent_without_nuclei)))==0, \
+        "cell_consistent_without_nuclei and unique_cell_consistent have common elements, this should not happen"
+
+
+    nuclei_consistent_with_cell = [list(cell_indice_to_keep[cell]) for cell in cell_consistent_with_nuclei]
+    nuclei_consistent_with_cell = np.concatenate(nuclei_consistent_with_cell).astype(int)
+
+    nuclei_consistent_not_in_cell = []
+    for nucleus in range(n_nuclei):
+        if len(nuclei_intersecting_cells[nucleus]) <= max_cell_nb_intersecting_nuclei:
+            if nucleus not in nuclei_consistent_with_cell:
+                nuclei_consistent_not_in_cell.append(nucleus)
+                assert len(nuclei_intersecting_cells[nucleus].intersection(set_all_cell_consistent)) == 0
+
+    nuclei_consistent_not_in_cell = list(set(nuclei_consistent_not_in_cell) - set(nuclei_consistent_with_cell))
+
+    list_polygon_cell_consistent = [list_polygon_cell[i] for i in cell_consistent_with_nuclei]
+    list_polygon_nuclei_consistent = [list_polygon_nuclei[i] for i in nuclei_consistent_with_cell]
+    list_polygon_cell_consistent_without_nuclei = [list_polygon_cell[i] for i in cell_consistent_without_nuclei]
+    list_polygon_nuclei_consistent_not_in_cell = [list_polygon_nuclei[i] for i in nuclei_consistent_not_in_cell]
+
+    ## compute unconcistent cell
+    set_all_cell = set(list(range(n_cells)))
+    set_all_cell_consistent = set(cell_consistent_with_nuclei).union(set(cell_consistent_without_nuclei))
+    set_all_cell_unconsistent = set_all_cell - set_all_cell_consistent
+    list_polygon_cell_unconsistent = [list_polygon_cell[i] for i in set_all_cell_unconsistent]
+
+    dict_polygon_index = {
+        "cell_consistent_with_nuclei": cell_consistent_with_nuclei,
+        "nuclei_consistent_with_cell": nuclei_consistent_with_cell,
+        "cell_consistent_without_nuclei": cell_consistent_without_nuclei,
+        "nuclei_consistent_not_in_cell": nuclei_consistent_not_in_cell,
+        "cell_unconsistent": list(set_all_cell_unconsistent),
+
+    }
+    return (list_polygon_cell_consistent, list_polygon_nuclei_consistent, list_polygon_cell_consistent_without_nuclei, list_polygon_nuclei_consistent_not_in_cell, list_polygon_cell_unconsistent,
+            dict_polygon_index)
+
+
+
+
+
+if __name__ == '__test__':
+
+    merfish_zarr_path = "/media/tom/Transcend/open_merfish/HumanBreastCancerPatient1/small_merfish.zarr"
+
+    sdata = sd.read_zarr(merfish_zarr_path)
+
+    sdata = compute_consistent_cell(
+        key_shape_nuclei_seg="cellpose_boundaries2",
+        key_shape_cell_seg="Cellbound1",
+        key_cell_consistent="cell_consistent",
+        key_nuclei_consistent="nuclei_consistent",
+        image_key="HumanBreastCancerPatient1_small_merfish_z3",
+        threshold_intersection_contain=1,
+    )
+    print(sdata)
+    key_cell_consistent = "cell_consistent"
+    save_shapes(sdata, key_cell_consistent, overwrite=True)
+
+    key_nuclei_consistent = "nuclei_consistent"
+    save_shapes(sdata, key_nuclei_consistent, overwrite=True)
+
+
+
+
+
+    ###############" check rasterize ################
+
+    import rasterio
+    from rasterio.features import rasterize
+    import numpy as np
+
+    # Define your list of polygons
+    polygons = list(sdata["cell_consistent"].geometry  )
+
+    # Define the transformation from pixel coordinates to the coordinate system of the polygons
+    # This is typically an affine transformation, but for simplicity, we'll use an identity transformation
+    transform = rasterio.Affine(1, 0, 0, 0, 1, 0)
+
+    # Define the shape of the output numpy array
+    shape = (9000, 9000)
+
+    # Rasterize the polygons into a numpy array
+    mask = rasterize(((geom, 1) for geom in polygons), out_shape=shape, transform=transform, fill=0, all_touched=True,
+                     dtype=np.uint16)
+    import tifffile
+    tifffile.imsave("/media/tom/Transcend/open_merfish/HumanBreastCancerPatient1/crop9000_4_5/images/cell_consistent.tif", mask)
+
+    print(mask)
+
+
+
+
+    import rasterio
+    from rasterio.features import rasterize
+    import numpy as np
+
+    # Define your list of polygons
+    polygons = list(sdata["nuclei_consistent"].geometry  )
+
+    # Define the transformation from pixel coordinates to the coordinate system of the polygons
+    # This is typically an affine transformation, but for simplicity, we'll use an identity transformation
+    transform = rasterio.Affine(1, 0, 0, 0, 1, 0)
+
+    # Define the shape of the output numpy array
+    shape = (9000, 9000)
+
+    # Rasterize the polygons into a numpy array
+    mask_nuclei = rasterize(((geom, 1) for geom in polygons), out_shape=shape, transform=transform, fill=0, all_touched=True,
+                            dtype=np.uint16)
+    import tifffile
+    tifffile.imsave("/media/tom/Transcend/open_merfish/HumanBreastCancerPatient1/crop9000_4_5/images/nuclei_consistent.tif", mask_nuclei)
+
+    print(mask)
+
+    ### test transfrom background mask to polygon
+
+    from skimage.measure import find_contours
+    import numpy as np
+    import tifffile
+    from matplotlib import pyplot as plt
+    from shapely.geometry import Polygon
+
+    background_mask = tifffile.imread("/media/tom/Transcend/open_merfish/test_spatial_data/from_cluster/rna_seg_1200/35/cell_consistent/background.tif")
+    plt.imshow(background_mask)
+    plt.show()
+
+    contours = find_contours(background_mask >0, 0.5)
+
+    import napari
+    viewer = napari.Viewer()
+    viewer.add_shapes(contours, shape_type='polygon', edge_color='red', name='Shapes')
+
+    polygons = [Polygon(contour) for contour in contours]
+
+
+
+    from sopa.segmentation.shapes import geometrize
+
+    polygons = geometrize(background_mask)
+
+
+    transform = rasterio.Affine(1, 0, 0, 0, 1, 0)
+
+    # Define the shape of the output numpy array
+    shape = (1200, 1200)
+
+    # Rasterize the polygons into a numpy array
+    mask_bg = rasterize(((geom, 1) for geom in polygons), out_shape=shape, transform=transform, fill=0, all_touched=True,
+                        dtype=np.uint16)
+
+
+    plt.imshow(mask_bg)
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
