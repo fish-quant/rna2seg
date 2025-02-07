@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rna2seg"
+version = "0.0.1"
+authors = [
+  { name="Thomas Defard", email="thomas.defard@minesparis.psl.eu" },
+  {name = "Alice Blondel", email="alice.blondel@minesparis.psl.eu"}
+]
+description = "A generalist model for cell segmentation in image-based spatial transcriptomics"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
