@@ -297,7 +297,8 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             bounds = [int(x) for x in patch.bounds]
             if check_border:
                 if self.y_max < bounds[3] or self.x_max < bounds[2]:
-                        continue
+                    continue
+
 
             if min_transcripts > 0:
                 patch_df = pd.read_csv(Path(self.patch_dir_csv) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')

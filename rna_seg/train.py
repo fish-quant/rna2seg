@@ -263,6 +263,10 @@ def _run(dict_result,
     img_cellbound = img_cellbound.to(device)
     rna_img = rna_img.to(device)
 
+    dapi = dapi.to(torch.float32)
+    rna_img = rna_img.to(torch.float32)
+    img_cellbound = img_cellbound.to(torch.float32)
+
     output = rnaseg(
                     list_gene=list_gene,
                     array_coord=array_coord,

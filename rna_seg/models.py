@@ -394,15 +394,6 @@ class RNASeg(nn.Module):
             self.net = CustomVMUnet(num_classes=self.nout, input_channels=nchan,
                                     # depths=[2,2,2,2], depths_decoder=[2,2,2,1], drop_path_rate=0.2,
                                     )
-        elif self.net_archi=="ci_unet":
-            from CNN_gene.rna_seg.ci_unet import ChannelInvariant_UNet
-            self.net = ChannelInvariant_UNet(out_channels=self.nout,
-                                             layers= [256,128,64,32],
-                                             norm="BATCH",
-                                             act="ReLu",
-                                             aggregation="concat")
-            num_params = sum(p.numel() for p in self.net.parameters())
-            print(f"Number of parameters in Ci_unet: {num_params}")
         else:
             raise ValueError(f"Model not implemented: {self.net}")
 
