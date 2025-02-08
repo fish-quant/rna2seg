@@ -1,5 +1,7 @@
 # RNA2seg - A generalist model for cell segmentation in image-based spatial transcriptomics
 
+![logo](./img/logo.png)
+
 ## Overview
 
 ![overview](./img/overview.png)
