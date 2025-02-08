@@ -1,8 +1,6 @@
-# RNA2seg
+# RNA2seg - A generalist model for cell segmentation in image-based spatial transcriptomics
 
 ## Overview
-
-**A generalist model for cell segmentation in image-based spatial transcriptomics**
 
 ![overview](./img/overview.png)
 
@@ -24,6 +22,8 @@ RNAseg is designed for researchers working with spatial transcriptomics data who
 Check RNA2seg's [documentation]() to get started. It contains installation explanations and tutorials.
 
 ## Installation
+
+## Features
 
 ## Citation
 
