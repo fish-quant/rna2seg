@@ -1,5 +1,6 @@
 
-
+import dask
+dask.config.set({'dataframe.query-planning': False})
 import os
 import numpy as np
 from cellpose import models
@@ -14,9 +15,13 @@ from torchvision.transforms.functional import gaussian_blur
 from torchvision.transforms.functional import gaussian_blur
 from pathlib import Path
 import albumentations as A
-
+import cv2
+import geopandas as gpd
 
 log = logging.getLogger(__name__)
+
+
+
 
 class CustomCPnet(CPnet):
     def __init__(self, *args, **kwargs):
@@ -130,7 +135,7 @@ class RNAEmbedding(nn.Module):
 
 
 
-class RNASeg(nn.Module):
+class RNA2seg(nn.Module):
 
     def __init__(
             self,
@@ -150,6 +155,7 @@ class RNASeg(nn.Module):
             ##### RNA embedding
             gene2index = None,
             #####
+
 
         ):
 
@@ -266,12 +272,15 @@ class RNASeg(nn.Module):
 
 
     def run(self,
+            path_temp_save,
+            min_area = 0,
             input_dict=None,
             list_gene=None,
             array_coord=None,
             dapi=None,
             img_cellbound=None,
             rna_img=None,
+            bounds=None,
             ):
         """
         Evaluates the model on a batch of images or a single image, and optionally on staining images.
@@ -289,6 +298,7 @@ class RNASeg(nn.Module):
             dapi = input_dict.get('dapi', dapi)
             img_cellbound = input_dict.get('img_cellbound', img_cellbound)
             rna_img = input_dict.get('rna_img', rna_img)
+            bounds = input_dict.get('bounds', bounds)
 
         self.net.eval()
         if "rna_embedding" in self.__dict__ and self.rna_embedding is not None:
@@ -335,28 +345,38 @@ class RNASeg(nn.Module):
     ##################
         from sopa.segmentation import shapes
 
-        original_image_shape
+        assert input_dict['bounds'][0] - input_dict['bounds'][2] == input_dict['bounds'][1] - input_dict['bounds'][3], "image must be square"
+
+        original_image_shape = input_dict['bounds'][2] - input_dict['bounds'][0]
+
         transforms_img1 = A.Compose([
             A.Resize(
-                width=original_image_shape[0],
-                height=original_image_shape[1],
+                width=original_image_shape,
+                height=original_image_shape,
                 interpolation=cv2.INTER_NEAREST
             ),
         ])
 
-        batch_masks =  transforms_img1(image=batch_masks[0])["image"]
+        masks_pred =  transforms_img1(image=masks_pred[0])["image"]
 
 
 
 
-        cells = shapes.geometrize(batch_masks,
+        cells = shapes.geometrize(masks_pred,
                                   tolerance = None,
-                                  smooth_radius_ratio= 0.1)
+                                  smooth_radius_ratio = 0.1)
         print(f'{len(cells)} cells detected')
+        cells = cells[cells.area >= self.min_area] if min_area > 0 else cells
 
-        bounds = dict_result["bounds"]
+        cells = gpd.GeoDataFrame(geometry=cells)
 
-        return flow, cellprob, masks_pred
+        cells.geometry = cells.translate(*input_dict['bounds'][:2])
+
+        ## save the cells as parquet
+        if path_temp_save is not None and input_dict is not None:
+            cells.to_parquet(path_temp_save / input_dict['idx'])
+
+        return flow, cellprob, masks_pred, cells
 
     def save_model(self, filename):
         """

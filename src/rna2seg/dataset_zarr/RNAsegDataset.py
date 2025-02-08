@@ -11,11 +11,11 @@ from scipy import ndimage as ndi
 import pickle
 import tifffile
 
-from rna_seg.dataset_zarr.background import get_background_mask
+from rna2seg.dataset_zarr.background import get_background_mask
 import importlib
-import rna_seg.dataset_zarr.staining_transcript
-importlib.reload(rna_seg.dataset_zarr.staining_transcript)
-from rna_seg.dataset_zarr.staining_transcript import StainingTranscriptSegmentation
+import rna2seg.dataset_zarr.staining_transcript
+importlib.reload(rna2seg.dataset_zarr.staining_transcript)
+from rna2seg.dataset_zarr.staining_transcript import StainingTranscriptSegmentation
 import json
 
 from albumentations.core.transforms_interface import ImageOnlyTransform
@@ -23,16 +23,16 @@ import spatialdata as sd
 import logging
 import pandas as pd
 log = logging.getLogger(__name__)
-from rna_seg._constant import RNAsegFiles
+from rna2seg._constant import RNAsegFiles
 from time import time
 
-from rna_seg.dataset_zarr.gene2color.utils import get_gene_random_vector
+from rna2seg.dataset_zarr.gene2color.utils import get_gene_random_vector
 
 import dask
 import cv2
 from tqdm import tqdm
 
-from rna_seg.dataset_zarr.data_augmentation import (augment_embeddings,
+from rna2seg.dataset_zarr.data_augmentation import (augment_embeddings,
                                                     random_rotate_and_resize,
                                                     cellbound_transform,
                                                     cellbound_transform2,
@@ -608,8 +608,11 @@ class RNAsegDataset(Dataset):
             if self.path_cache is not None:
                 folder_to_save = Path(self.path_cache) / f"{patch_index}"
                 folder_to_save.mkdir(exist_ok=True, parents=True)
+            else:
+                folder_to_save = None
             dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background, list_gene, \
-                array_coord, segmentation_nuclei, bounds = self._get_patch_input(patch_index, folder_to_save)
+                array_coord, segmentation_nuclei, bounds = self._get_patch_input(patch_index=patch_index,
+                                                                                 folder_to_save=folder_to_save)
 
 
 
