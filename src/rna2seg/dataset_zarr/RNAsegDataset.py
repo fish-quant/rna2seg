@@ -577,16 +577,17 @@ class RNA2segDataset(Dataset):
                 bounds = json.load(open(path_csv / RNAsegFiles.BOUNDS_FILE, "r"))
                 patch_df = pd.read_csv(path_csv / RNAsegFiles.TRANSCRIPTS_FILE)
 
+                bounds = bounds["bounds"]
                 rna_img = rna2img(
                     df_crop=patch_df, 
                     dict_gene_value=self.dict_gene_value,
-                    image_shape=(dapi.shape[0], dapi.shape[1], self.nb_channel_rna), 
+                    image_shape=(dapi.shape[1], dapi.shape[2], self.nb_channel_rna), 
                     gene_column=self.gene_column,
                     column_x="x", column_y="y", offset_x=bounds[0], offset_y=bounds[1],
                     gaussian_kernel_size=self.kernel_size_rna2img, 
                     max_filter_size=self.max_filter_size_rna2img,
                     addition_mode=self.addition_mode
-                )
+                ).transpose(2, 0, 1)
 
                 compute_all_patch = False
 
@@ -786,18 +787,12 @@ class RNA2segDataset(Dataset):
 
 
         if self.return_flow:
-            # path_save_flow = Path(folder_to_save) / f'{RNAsegFiles.LABEL_AND_MASK_FLOW}'
-            # if path_save_flow.exists() and not self.recompute_flow:
-            #     target = np.load(path_save_flow, allow_pickle=True)
-            # else:
             from cellpose.dynamics import  labels_to_flows
             target = labels_to_flows(
                 [agreement_segmentation], files=None, redo_flows=False, device = torch.device("cpu")
             )[0]
             target[:,agreement_segmentation==0] = 0
             target[:, background > 0] = 0
-            # np.save(path_save_flow, target)
-            ## update the target depending of the mask gradient and the background
             label, pred, flow_x, flow_y = target
         else:
             label, pred, flow_x, flow_y = [agreement_segmentation,

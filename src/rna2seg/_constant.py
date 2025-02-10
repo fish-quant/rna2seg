@@ -8,7 +8,6 @@
 class RNAsegFiles:
     NB_CELL_FILE = "nb_cell.txt"
     RNA_SEG_INPUT = "input_rna_seg.tif"
-    LABEL_AND_MASK_FLOW = "flow.npy"
     LABEL_AND_MASK_FLOW_OMNIPOSE = "flow_omnipose.npy"
     MASK_FLOW = "mask_flow.tif"
     MASK_FLOW_OMNIPOSE = "mask_flow_omnipose.tif"

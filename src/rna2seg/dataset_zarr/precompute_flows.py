@@ -34,7 +34,7 @@ def precompute_flow(sdata,
                     shape_patch_key: str,
                     segmentation_key: str,
                     channel_dapi: int,
-                    patch_dir_csv = str,
+                    patch_dir = str,
                     list_path_index: list[int] | None = None,
                     compute_cellpose: bool = True,
                     compute_omnipose: bool = False,
@@ -64,7 +64,7 @@ def precompute_flow(sdata,
         cell_segmentation = sdata[segmentation_key].cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
         full_segmentation = get_segmentation_crop(cell_segmentation, bounds = bounds, shape = shape,)
 
-        path_save = Path(patch_dir_csv) / f'{patch_index}/{key_cell}'
+        path_save = Path(patch_dir) / f'{patch_index}/{key_cell}'
         print(path_save)
         path_save.mkdir(exist_ok=True, parents=True)
         if shape is None:
@@ -98,10 +98,10 @@ if __name__ == "__main__":
     key_cell = "manual_annotation_for_finetuning"
     shape_patch_key = "sopa_patches_rna2seg_1200_50"
     image_key = "data_release_baysor_merfish_gut_RNAseg_DATASET_z3"
-    patch_dir_csv = "/cluster/CBIO/data1/st_segmentation/open_vizgen/RNAseg_DATASET/mouse_ileum/RNAseg_DATASET.zarr/.sopa_cache/rna_seg_1200_50"
+    patch_dir = "/cluster/CBIO/data1/st_segmentation/open_vizgen/RNAseg_DATASET/mouse_ileum/RNAseg_DATASET.zarr/.sopa_cache/rna_seg_1200_50"
     sdata = sd.read_zarr("/cluster/CBIO/data1/st_segmentation/open_vizgen/RNAseg_DATASET/mouse_ileum/RNAseg_DATASET.zarr")
 
     precompute_flow(
         sdata, image_key, shape_patch_key, segmentation_key, channel_dapi, 
-        patch_dir_csv,  key_cell=key_cell, list_path_index=list_path_index, shape  = (1200, 1200),
+        patch_dir,  key_cell=key_cell, list_path_index=list_path_index, shape  = (1200, 1200),
     )

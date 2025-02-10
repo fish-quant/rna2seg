@@ -43,7 +43,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             key_cell_consistent  : str | None = None,
             key_nucleus_consistent : str | None = None,
             density_threshold : float | None = None,
-            patch_dir_csv : str | Path | None = None,
+            patch_dir : str | Path | None = None,
             min_area: float = 0,
             clip_limit: float = 0,
             gaussian_sigma: float = 0,
@@ -117,9 +117,9 @@ class StainingTranscriptSegmentation(StainingSegmentation):
                 self.cell_consistent_without_nuclei =  self.sdata[self.key_cell_consistent_without_nuclei ]
 
         self.density_threshold = density_threshold
-        self.patch_dir_csv = patch_dir_csv
-        if self.patch_dir_csv is None:
-            self.patch_dir_csv = Path(self.sdata.path) / ".rna2seg"
+        self.patch_dir = patch_dir
+        if self.patch_dir is None:
+            self.patch_dir = Path(self.sdata.path) / ".rna2seg"
         self.shape_patch_key = shape_patch_key
 
         self.y_max = sdata[self.image_key]["scale0"].dims['y']
@@ -159,7 +159,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         else:
             image = np.zeros(( bounds[3] - bounds[1], bounds[2] - bounds[0]), dtype=np.uint16)
 
-        patch_df = pd.read_csv(Path(self.patch_dir_csv) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
+        patch_df = pd.read_csv(Path(self.patch_dir) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
 
         if return_agg_segmentation:
             assert self.key_cell_consistent is not None, "aggrement segmentation is not loaded/ initialized"
@@ -229,7 +229,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         Compute the density threshold for a list of patch
         :param list_path_index:
         :param shape_segmentation_key:
-        :param patch_dir_csv:
+        :param patch_dir:
         :param shape:
         :param kernel_size: kernel size for the density mask estiamtion with gaussina filter
         :param percentile_threshold:  use as example :  np.percentile(all_list_density, percentile_threshold = 7)
@@ -249,7 +249,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             patch = self.sdata[self.shape_patch_key].geometry[patch_index]
             bounds = [int(x) for x in patch.bounds]
             gdf_polygon_segmentation = segmentation_shapes.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
-            patch_df = pd.read_csv(Path(self.patch_dir_csv) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
+            patch_df = pd.read_csv(Path(self.patch_dir) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
 
             if len(patch_df) == 0 or len(gdf_polygon_segmentation) == 0:
                 continue
@@ -298,7 +298,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
 
 
             if min_transcripts > 0:
-                patch_df = pd.read_csv(Path(self.patch_dir_csv) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
+                patch_df = pd.read_csv(Path(self.patch_dir) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
                 if len(patch_df) < min_transcripts:
                     continue
 
@@ -408,7 +408,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
                                     key_cell=key_cell)
 
 
-            path_save = Path(self.patch_dir_csv) / f'{patch_index}/{key_cell}'
+            path_save = Path(self.patch_dir) / f'{patch_index}/{key_cell}'
             path_save.mkdir(exist_ok=True, parents=True)
             if shape is None:
                 tifffile.imwrite(path_save / RNAsegFiles.IMAGE, image)
