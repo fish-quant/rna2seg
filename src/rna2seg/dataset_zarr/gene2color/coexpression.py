@@ -10,7 +10,7 @@ import scipy
 from tqdm import tqdm
 from pathlib import Path
 ######### use the coexpression matrix to embedd the gene in 2D where similar gene are close to each other
-from CNN_gene.rna_seg._constant import RNAsegFiles
+from rna2seg._constant import RNAsegFiles
 
 
 def count_matrix_in_situ_from_knn(list_gene,

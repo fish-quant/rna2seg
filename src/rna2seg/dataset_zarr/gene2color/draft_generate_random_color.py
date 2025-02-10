@@ -21,7 +21,7 @@ import numpy as np
 from shapely.geometry import Polygon
 
 import geopandas as gpd
-from rna_seg.dataset_zarr.gene2color.utils import get_gene_random_vector
+from rna2seg.dataset_zarr.gene2color.utils import get_gene_random_vector
 
 
 

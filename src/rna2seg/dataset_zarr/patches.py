@@ -24,10 +24,10 @@ import sopa.segmentation
 import logging
 from pathlib import Path
 import numpy as np
-from rna_seg.dataset_zarr.staining_transcript import StainingTranscriptSegmentation
+from rna2seg.dataset_zarr.staining_transcript import StainingTranscriptSegmentation
 import importlib
-import rna_seg.dataset_zarr.staining_transcript
-importlib.reload(rna_seg.dataset_zarr.staining_transcript)
+import rna2seg.dataset_zarr.staining_transcript
+importlib.reload(rna2seg.dataset_zarr.staining_transcript)
 import dask
 dask.config.set({'dataframe.query-planning': False})
 
@@ -192,7 +192,7 @@ class TranscriptPatches_with_scale(TranscriptPatches):
                 assert self.temp_dir == Path(temp_dir), f"temp_dir is not the same as the one already set {self.temp_dir} != {temp_dir}"
 
         assert self.temp_dir.exists(), f"temp_dir {self.temp_dir} does not exist, save first csv file"
-        from rna_seg._constant import RNAsegFiles
+        from rna2seg._constant import RNAsegFiles
         import json
         patches_gdf = gpd.GeoDataFrame(geometry=self.patches_2d.polygons)
         for index, polygon in patches_gdf.iterrows() :

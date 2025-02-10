@@ -11,8 +11,8 @@ from cellpose.dynamics import  labels_to_flows
 import logging
 log = logging.getLogger(__name__)
 
-from rna_seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
-from rna_seg._constant import RNAsegFiles
+from rna2seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
+from rna2seg._constant import RNAsegFiles
 
 def get_segmentation_crop(cell_segmentation, bounds, shape):
     try :

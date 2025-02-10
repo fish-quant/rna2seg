@@ -19,16 +19,18 @@ from sopa.segmentation.stainings import StainingSegmentation
 from spatialdata import SpatialData
 
 from shapely import Polygon
-from rna_seg.dataset_zarr.consistency import compute_polygon_intersection
+from rna2seg.dataset_zarr.consistency import compute_polygon_intersection
 
 log = logging.getLogger(__name__)
 from tqdm import tqdm
 
 import geopandas as gpd
-from rna_seg._constant import RNAsegFiles
+from rna2seg._constant import RNAsegFiles
 from cellpose.dynamics import  labels_to_flows
-from rna_seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
+from rna2seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
 import dask
+dask.config.set({'dataframe.query-planning': False})
+
 dask.config.set(scheduler='synchronous')
 
 class StainingTranscriptSegmentation(StainingSegmentation):
@@ -240,7 +242,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         :return:
         """
 
-        from rna_seg.dataset_zarr.background import get_rna_density, get_mean_density_per_polygon
+        from rna2seg.dataset_zarr.background import get_rna_density, get_mean_density_per_polygon
 
         if list_path_index is None:
             list_path_index = list(range(len(self.sdata[self.shape_patch_key].geometry)))

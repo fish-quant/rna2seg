@@ -292,6 +292,7 @@ class RNA2seg(nn.Module):
             torch.Tensor: The predicted cell probability.
             np.array: The predicted masks.
         """
+        Path(path_temp_save).mkdir(parents=True, exist_ok=True)
         if input_dict is not None:
             list_gene = input_dict.get('list_gene', list_gene)
             array_coord = input_dict.get('array_coord', array_coord)
@@ -374,7 +375,7 @@ class RNA2seg(nn.Module):
 
         ## save the cells as parquet
         if path_temp_save is not None and input_dict is not None:
-            cells.to_parquet(path_temp_save / input_dict['idx'])
+            cells.to_parquet(path_temp_save / f"{input_dict['idx']}.parquet")
 
         return flow, cellprob, masks_pred, cells
 
