@@ -1,14 +1,16 @@
-# RNA2seg
+# RNA2seg - A generalist model for cell segmentation in image-based spatial transcriptomics
+
+<p align="center">
+    <img src="./img/logo.png" width="200"/>
+</p>
 
 ## Overview
-
-**A generalist model for cell segmentation in image-based spatial transcriptomics**
-
-![overview](./img/overview.png)
 
 **RNAseg** is a deep learning-based segmentation model designed to improve cell segmentation in **Imaging-based Spatial Transcriptomics (IST)**. Traditional IST methods rely on nuclear and membrane staining to define cell boundaries, but segmentation can be challenging due to the variable quality of membrane markers.  
 
 RNAseg addresses this issue by integrating an **arbitrary number of staining channels** along with **RNA spatial distributions** to enhance segmentation accuracy, particularly in regions with low-quality membrane staining. It is built on **SpatialData**, enabling seamless processing and analysis of spatial transcriptomics data.  
+
+![overview](./img/overview.png)
 
 ### **Key Features:**  
 - **Multi-channel input**: Leverages nuclear, membrane, and RNA spatial data.  
@@ -24,6 +26,8 @@ RNAseg is designed for researchers working with spatial transcriptomics data who
 Check RNA2seg's [documentation]() to get started. It contains installation explanations and tutorials.
 
 ## Installation
+
+## Features
 
 ## Citation
 
