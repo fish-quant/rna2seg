@@ -1,15 +1,14 @@
 
-
-import geopandas as gpd
 import shapely
+import numpy as np
+from tqdm import tqdm
+import geopandas as gpd
 import spatialdata as sd
-# from sopa._sdata import get_spatial_image, save_shapes
 from sopa._sdata import get_spatial_image
 from spatialdata.models import ShapesModel
 from spatialdata.transformations import get_transformation
 from shapely.validation import explain_validity
-from tqdm import tqdm
-import numpy as np
+
 
 # todo complete this fonction and add it into the compute_consistent_cell function
 def compute_polygon_intersection(list_polygon_patch, list_polygon_annotation):

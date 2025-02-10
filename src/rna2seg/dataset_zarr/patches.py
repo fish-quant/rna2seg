@@ -2,32 +2,19 @@
 #### tile the images
 from __future__ import annotations
 
+import shutil
 import logging
-from functools import partial
-
-import dask.dataframe as dd
 import geopandas as gpd
+import spatialdata as sd
+from pathlib import Path
+from functools import partial
+import dask.dataframe as dd
 from dask.diagnostics import ProgressBar
 from sopa._constants import SopaFiles, SopaKeys
-from sopa._sdata import (
-    to_intrinsic,
-)
-from sopa.patches.patches import TranscriptPatches
+from sopa._sdata import to_intrinsic
 from sopa.segmentation import Patches2D
-from pathlib import Path
-from spatialdata import SpatialData
+from sopa.patches.patches import TranscriptPatches
 
-
-import shutil
-import spatialdata as sd
-import sopa.segmentation
-import logging
-from pathlib import Path
-import numpy as np
-from rna2seg.dataset_zarr.staining_transcript import StainingTranscriptSegmentation
-import importlib
-import rna2seg.dataset_zarr.staining_transcript
-importlib.reload(rna2seg.dataset_zarr.staining_transcript)
 import dask
 dask.config.set({'dataframe.query-planning': False})
 
@@ -76,19 +63,19 @@ def create_patch_rnaseg(sdata : sd.SpatialData,
             sd.transformations.operations.remove_transformation(element, coordinate_system)
         except KeyError:
             pass
-    patches = sopa.segmentation.Patches2D(sdata=sdata,
-                                          element_name=image_key,
-                                          patch_width=patch_width,
-                                          patch_overlap=patch_overlap)
+    patches = Patches2D(sdata=sdata,
+                        element_name=image_key,
+                        patch_width=patch_width,
+                        patch_overlap=patch_overlap)
     # save polygons patch in the sdata
-    shape_patch_key = f"sopa_patches_rna_seg_{patch_width}_{patch_overlap}"
+    shape_patch_key = f"sopa_patches_rna2seg_{patch_width}_{patch_overlap}"
     if not overwrite:
         if not Path(sdata.path / f"shapes/{shape_patch_key}").exists():
-            patches.write(shapes_key = f"sopa_patches_rna_seg_{patch_width}_{patch_overlap}",)
+            patches.write(shapes_key = f"sopa_patches_rna2seg_{patch_width}_{patch_overlap}",)
     else:
         if  Path(sdata.path / f"shapes/{shape_patch_key}").exists():
             shutil.rmtree(sdata.path / f"shapes/{shape_patch_key}")
-        patches.write(shapes_key = f"sopa_patches_rna_seg_{patch_width}_{patch_overlap}",)
+        patches.write(shapes_key = f"sopa_patches_rna2seg_{patch_width}_{patch_overlap}",)
 
 
     if not overwrite:
@@ -118,14 +105,13 @@ class TranscriptPatches_with_scale(TranscriptPatches):
     """
     def __init__(
             self,
-            sdata : SpatialData,
+            sdata : sd.SpatialData,
             patches_2d: Patches2D | list,
             df: dd.DataFrame | gpd.GeoDataFrame,
             config_name: str,
             csv_name: str,
             min_transcripts_per_patch: int,
     ):
-        #super().__init__(patches_2d, df, config_name, csv_name, min_transcripts_per_patch)
         self.patches_2d = patches_2d
         self.df = df
         self.min_transcripts_per_patch = min_transcripts_per_patch # to remove not use

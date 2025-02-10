@@ -1,44 +1,32 @@
 #%%
 
-
-from pathlib import Path
-import torch
-import albumentations as A
-import numpy as np
-from cellpose import transforms as tf_cp
-from torch.utils.data import Dataset
-from scipy import ndimage as ndi
-import pickle
-import tifffile
-
-from rna2seg.dataset_zarr.background import get_background_mask
-import importlib
-import rna2seg.dataset_zarr.staining_transcript
-importlib.reload(rna2seg.dataset_zarr.staining_transcript)
-from rna2seg.dataset_zarr.staining_transcript import StainingTranscriptSegmentation
+import cv2
 import json
-
-from albumentations.core.transforms_interface import ImageOnlyTransform
-import spatialdata as sd
+import torch
 import logging
+import tifffile
+import numpy as np
 import pandas as pd
-log = logging.getLogger(__name__)
-from rna2seg._constant import RNAsegFiles
+from tqdm import tqdm
 from time import time
+import spatialdata as sd
+from pathlib import Path
+import albumentations as A
+from scipy import ndimage as ndi
+from torch.utils.data import Dataset
+from cellpose import transforms as tf_cp
+from albumentations.core.transforms_interface import ImageOnlyTransform
 
-from rna2seg.dataset_zarr.gene2color.utils import get_gene_random_vector
+from rna2seg._constant import RNAsegFiles
+from rna2seg.dataset_zarr import StainingTranscriptSegmentation
+from rna2seg.dataset_zarr.background import get_background_mask
+from rna2seg.dataset_zarr.data_augmentation import random_rotate_and_resize, cellbound_transform
+
+log = logging.getLogger(__name__)
 
 import dask
-import cv2
-from tqdm import tqdm
-
-from rna2seg.dataset_zarr.data_augmentation import (augment_embeddings,
-                                                    random_rotate_and_resize,
-                                                    cellbound_transform,
-                                                    cellbound_transform2,
-                                                    cellbound_transform3)
-
 dask.config.set(scheduler='synchronous')
+
 
 def create_augmented_patch_df(patch_df, factor=2, std_dev = 5):
 
@@ -302,7 +290,7 @@ def remove_cell_in_background(agreement_segmentation,
 
 
 
-class RNAsegDataset(Dataset):
+class RNA2segDataset(Dataset):
 
     def __init__(self,
 
@@ -316,7 +304,6 @@ class RNAsegDataset(Dataset):
                  key_nucleus_consistent : str | None = None,
                  key_nuclei_segmentation : str | None = None, # use to compute background
 
-                 patch_dir_csv : Path|str| None = None,
 
                  dict_gene_value: dict | None = None,
 
@@ -360,10 +347,11 @@ class RNAsegDataset(Dataset):
 
                  ###  for save cache
 
-                 path_cache = None,
+                # path_cache
+                 patch_dir : Path|str| None = None, # Transcripts
                  experiment_name = 'input_target_rnaseg', # for dev only
-                 use_cache_only = False,
-                ## IMG AUGMAENTATION
+                 use_cache = False,
+                ## IMG AUGMENTATION
 
                 ### optional for testing
                  shape_patch_key=None,
@@ -397,7 +385,6 @@ class RNAsegDataset(Dataset):
 
         self.training_mode = training_mode # should be imporve
         self.evaluation_mode = evaluation_mode
-        self.use_cache_only = use_cache_only
 
         if self.training_mode:
             self.return_agg_segmentation = True
@@ -417,27 +404,24 @@ class RNAsegDataset(Dataset):
 
         # path parameter
         if shape_patch_key is None:
-
-            shape_patch_key = f"sopa_patches_rna_seg_{patch_width}_{patch_overlap}"
+            shape_patch_key = f"sopa_patches_rna2seg_{patch_width}_{patch_overlap}"
             print(f'default shape_patch_key set to {shape_patch_key}')
-        if not use_cache_only:
-            assert shape_patch_key in sdata, f"shape_patch_key {shape_patch_key} not in sdata, set the correct shape_patch_key"
+        assert shape_patch_key in sdata, f"shape_patch_key {shape_patch_key} not in sdata, set the correct shape_patch_key"
 
         self.key_nuclei_segmentation = key_nuclei_segmentation
 
-        if not use_cache_only:
-            st_segmentation = StainingTranscriptSegmentation(
-                sdata=sdata,
-                channels_dapi=channels_dapi,
-                channels_cellbound=channels_cellbound,
-                key_nuclei_segmentation=key_nuclei_segmentation, # use to compute background
-                key_cell_consistent=key_cell_consistent,
-                key_nucleus_consistent=key_nucleus_consistent,
-                density_threshold=density_threshold,
-                patch_dir_csv=patch_dir_csv,
-                shape_patch_key =shape_patch_key,
-            )
-            self.st_segmentation = st_segmentation
+        st_segmentation = StainingTranscriptSegmentation(
+            sdata=sdata,
+            channels_dapi=channels_dapi,
+            channels_cellbound=channels_cellbound,
+            key_nuclei_segmentation=key_nuclei_segmentation, # use to compute background
+            key_cell_consistent=key_cell_consistent,
+            key_nucleus_consistent=key_nucleus_consistent,
+            density_threshold=density_threshold,
+            patch_dir=patch_dir,
+            shape_patch_key =shape_patch_key,
+        )
+        self.st_segmentation = st_segmentation
 
         self.min_nb_cell_per_patch = min_nb_cell_per_patch
         self.list_patch_index = list_patch_index
@@ -491,11 +475,10 @@ class RNAsegDataset(Dataset):
 
         self.recompute_flow = recompute_flow
 
-        self.path_cache = path_cache
-        if self.path_cache is not None:
-            self.path_cache = Path(self.path_cache)
-            self.path_cache.mkdir(exist_ok=True, parents=True)
-            self.experiment_name = experiment_name
+        self.use_cache = use_cache
+        self.experiment_name = experiment_name
+        self.patch_dir =  patch_dir
+
 
 
     ######" data augmentation ######
@@ -506,7 +489,7 @@ class RNAsegDataset(Dataset):
                 A.CropNonEmptyMaskIfExists(height=self.resize ,
                                            width=self.resize,
                                            p=1.0),
-                A.RandomResizedCrop(height=self.resize , width=self.resize , scale=(0.5, 1), ratio=(0.75, 1.33), p=0.5)
+                A.RandomResizedCrop(size=(self.resize , self.resize) , scale=(0.5, 1), ratio=(0.75, 1.33), p=0.5)
             ])
 
         self.training_mode=training_mode
@@ -514,16 +497,14 @@ class RNAsegDataset(Dataset):
 
 
         if self.list_patch_index is None:
-            if use_cache_only:
-                self.list_patch_index = self._set_valid_indices()
-            else:
-                nb_patches = len(self.st_segmentation.sdata[self.st_segmentation.shape_patch_key])
-                self.list_patch_index = list(range(nb_patches))
-                shape_segmentation_key = self.st_segmentation.key_cell_consistent_with_nuclei
-                self.list_patch_index  = self.st_segmentation.get_valid_patch(min_nb_cell = self.min_nb_cell_per_patch,
-                                                                              list_path_index = self.list_patch_index,
-                                                                              shape_segmentation_key = shape_segmentation_key,
-                                                                              min_transcripts=self.min_transcripts)
+           
+            nb_patches = len(self.st_segmentation.sdata[self.st_segmentation.shape_patch_key])
+            self.list_patch_index = list(range(nb_patches))
+            shape_segmentation_key = self.st_segmentation.key_cell_consistent_with_nuclei
+            self.list_patch_index  = self.st_segmentation.get_valid_patch(min_nb_cell = self.min_nb_cell_per_patch,
+                                                                            list_path_index = self.list_patch_index,
+                                                                            shape_segmentation_key = shape_segmentation_key,
+                                                                            min_transcripts=self.min_transcripts)
 
 
             log.info(f"Number of valid patches: {len(self.list_patch_index)}")
@@ -535,6 +516,18 @@ class RNAsegDataset(Dataset):
             log.info(f"Number of valid patches before removing annotation: {len(self.list_patch_index)}")
             self.list_patch_index = list(set(list(self.list_patch_index)) - set(list(list_annotation_patches)))
             log.info(f"Number of valid patches after removing annotation: {len(self.list_patch_index)}")
+    
+        if self.training_mode:
+            if patch_width is None:
+                import re
+                patch_width = re.search(r"sopa_patches_rna2seg_(\d+)_", shape_patch_key)
+            self.set_threshold(
+                max_nb_crops=500,
+                kernel_size = 9,
+                percentile_threshold = 5,
+                shape=(patch_width, patch_width)
+            )
+        
     def __len__(self):
         return  len(self.list_patch_index)
 
@@ -560,11 +553,9 @@ class RNAsegDataset(Dataset):
 
         ############# check if cache exist ###################
         compute_all_patch = True
-        if self.path_cache is not None:
-            folder_to_save = Path(self.path_cache) / f"{patch_index}/{self.experiment_name}"
+        folder_to_save = Path(self.patch_dir) / str(patch_index) / self.experiment_name
 
-
-        if self.path_cache is not None and folder_to_save.exists():
+        if self.use_cache:
             try:
                 img_cellbound = tifffile.imread(folder_to_save / RNAsegFiles.CELLBOUND)
                 dapi = tifffile.imread(folder_to_save / RNAsegFiles.DAPI)
@@ -582,37 +573,36 @@ class RNAsegDataset(Dataset):
                 if self.key_nuclei_segmentation:
                     segmentation_nuclei = tifffile.imread(folder_to_save / RNAsegFiles.SEGMENTATION_NUCLEI)
 
-                path_csv =  Path(self.path_cache) / f"{patch_index}"
+                path_csv =  Path(self.patch_dir) / str(patch_index)
                 bounds = json.load(open(path_csv / RNAsegFiles.BOUNDS_FILE, "r"))
                 patch_df = pd.read_csv(path_csv / RNAsegFiles.TRANSCRIPTS_FILE)
 
-                rna_img = rna2img(df_crop=patch_df, dict_gene_value=self.dict_gene_value,
-                image_shape=(dapi.shape[0], dapi.shape[1], self.nb_channel_rna), gene_column=self.gene_column,
-                column_x="x", column_y="y", offset_x=bounds[0], offset_y=bounds[1],
-                gaussian_kernel_size=self.kernel_size_rna2img, max_filter_size=self.max_filter_size_rna2img,
-                addition_mode=self.addition_mode)
-
-
-
+                rna_img = rna2img(
+                    df_crop=patch_df, 
+                    dict_gene_value=self.dict_gene_value,
+                    image_shape=(dapi.shape[0], dapi.shape[1], self.nb_channel_rna), 
+                    gene_column=self.gene_column,
+                    column_x="x", column_y="y", offset_x=bounds[0], offset_y=bounds[1],
+                    gaussian_kernel_size=self.kernel_size_rna2img, 
+                    max_filter_size=self.max_filter_size_rna2img,
+                    addition_mode=self.addition_mode
+                )
 
                 compute_all_patch = False
 
             except  Exception as e:
                 print(f"Error while loading cache: {e}")
                 print(f"Recomputing the patch {patch_index}")
-                if self.use_cache_only:
-                    raise ValueError("The cache is not complete, please recompute the cache")
 
 
         if compute_all_patch:
-            if self.path_cache is not None:
-                folder_to_save = Path(self.path_cache) / f"{patch_index}"
-                folder_to_save.mkdir(exist_ok=True, parents=True)
-            else:
-                folder_to_save = None
+            folder_to_save = Path(self.patch_dir) / str(patch_index)
+            folder_to_save.mkdir(exist_ok=True, parents=True)
             dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background, list_gene, \
-                array_coord, segmentation_nuclei, bounds = self._get_patch_input(patch_index=patch_index,
-                                                                                 folder_to_save=folder_to_save)
+                array_coord, segmentation_nuclei, bounds = self._get_patch_input(
+                    patch_index=patch_index,
+                    folder_to_save=folder_to_save
+                )
 
 
 
@@ -796,16 +786,17 @@ class RNAsegDataset(Dataset):
 
 
         if self.return_flow:
-            path_save_flow = Path(folder_to_save) / f'{RNAsegFiles.LABEL_AND_MASK_FLOW}.npy'
-            if path_save_flow.exists() and not self.recompute_flow:
-                target = np.load(path_save_flow, allow_pickle=True)
-            else:
-                from cellpose.dynamics import  labels_to_flows
-                target = labels_to_flows([agreement_segmentation], files=None,
-                                         device=None, redo_flows=False)[0]
-                target[:,agreement_segmentation==0] = 0
-                target[:, background > 0] = 0
-                np.save(path_save_flow, target)
+            # path_save_flow = Path(folder_to_save) / f'{RNAsegFiles.LABEL_AND_MASK_FLOW}'
+            # if path_save_flow.exists() and not self.recompute_flow:
+            #     target = np.load(path_save_flow, allow_pickle=True)
+            # else:
+            from cellpose.dynamics import  labels_to_flows
+            target = labels_to_flows(
+                [agreement_segmentation], files=None, redo_flows=False, device = torch.device("cpu")
+            )[0]
+            target[:,agreement_segmentation==0] = 0
+            target[:, background > 0] = 0
+            # np.save(path_save_flow, target)
             ## update the target depending of the mask gradient and the background
             label, pred, flow_x, flow_y = target
         else:
@@ -845,9 +836,9 @@ class RNAsegDataset(Dataset):
         dapi = rna_seg_input[:1]
         rna_img = rna_seg_input[1:]
 
-        if self.path_cache is not None:
+        if self.use_cache:
 
-            folder_to_save = Path(self.path_cache / f"{patch_index}")
+            folder_to_save = Path(self.patch_dir) / str(patch_index) / self.experiment_name
             folder_to_save.mkdir(exist_ok=True, parents=False)
 
             tifffile.imwrite(folder_to_save / RNAsegFiles.CELLBOUND, img_cellbound)

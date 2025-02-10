@@ -1,36 +1,33 @@
 
 #### tile the images
 from __future__ import annotations
+
 import sys
 import logging
-from pathlib import Path
-from typing import Callable
-from sopa._constants import SopaFiles, SopaKeys
-
-import numpy as np
-import pandas as pd
 import rasterio
 import tifffile
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+import geopandas as gpd
+from pathlib import Path
+from shapely import Polygon
+from skimage import exposure
 from rasterio.features import rasterize
 from scipy.ndimage import gaussian_filter
-from skimage import exposure
+from cellpose.dynamics import  labels_to_flows
+from spatialdata import SpatialData
 from sopa._constants import SopaFiles
 from sopa.segmentation.stainings import StainingSegmentation
-from spatialdata import SpatialData
 
-from shapely import Polygon
+from rna2seg._constant import RNAsegFiles
+from rna2seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
 from rna2seg.dataset_zarr.consistency import compute_polygon_intersection
 
 log = logging.getLogger(__name__)
-from tqdm import tqdm
 
-import geopandas as gpd
-from rna2seg._constant import RNAsegFiles
-from cellpose.dynamics import  labels_to_flows
-from rna2seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
 import dask
 dask.config.set({'dataframe.query-planning': False})
-
 dask.config.set(scheduler='synchronous')
 
 class StainingTranscriptSegmentation(StainingSegmentation):
@@ -115,8 +112,6 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             if key is not None:
                 assert key in self.sdata.shapes, f"{key} not in sdata.shapes {self.sdata.shapes}"
 
-
-
         if self.key_cell_consistent is not None: # to remove
                 self.cell_consistent_with_nuclei =  self.sdata[self.key_cell_consistent_with_nuclei]
                 self.cell_consistent_without_nuclei =  self.sdata[self.key_cell_consistent_without_nuclei ]
@@ -124,7 +119,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         self.density_threshold = density_threshold
         self.patch_dir_csv = patch_dir_csv
         if self.patch_dir_csv is None:
-            self.patch_dir_csv = Path(self.sdata.path) / ".rna_seg"
+            self.patch_dir_csv = Path(self.sdata.path) / ".rna2seg"
         self.shape_patch_key = shape_patch_key
 
         self.y_max = sdata[self.image_key]["scale0"].dims['y']

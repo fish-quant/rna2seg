@@ -99,7 +99,6 @@ def train_one_epoch(
 
     for i_train, dict_result in tqdm(enumerate(training_loader), file = sys.stdout,
                                      total=len(training_loader), desc="training"): #, file = sys.stdout, total=len(training_loader)):#
-        print(f"batch {i_train}")
 
 
         loss = _run(dict_result=dict_result,
@@ -122,7 +121,6 @@ def train_one_epoch(
 
             last_loss = running_loss / print_loss_every # loss per batch
 
-            print('  batch nb {} loss: {} '.format(i_train + 1, last_loss))
             tb_x = epoch_index * len(training_loader) + i_train + 1
             if tb_writer is not None:
                 tb_writer.add_scalar('Loss/train', last_loss, tb_x)
@@ -134,7 +132,6 @@ def train_one_epoch(
                 rnaseg.eval()
                 with torch.no_grad():
                     for i_test, dict_result_val in enumerate(validation_loader):
-                        print(f"batch {i_test}")
                         loss_val = _run(dict_result=dict_result_val,
                                            rna_emb=rna_emb,
                                            device=device,

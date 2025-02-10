@@ -1,11 +1,11 @@
-import rasterio
-from rasterio.features import rasterize
 import sys
 import tifffile
+import rasterio
 import numpy as np
 from tqdm import tqdm 
 import spatialdata as sd
 from pathlib import Path
+from rasterio.features import rasterize
 from cellpose.dynamics import  labels_to_flows
 
 import logging
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     list_path_index = None
     segmentation_key = "manual_annotation_for_finetuning"
     key_cell = "manual_annotation_for_finetuning"
-    shape_patch_key = "sopa_patches_rna_seg_1200_50"
+    shape_patch_key = "sopa_patches_rna2seg_1200_50"
     image_key = "data_release_baysor_merfish_gut_RNAseg_DATASET_z3"
     patch_dir_csv = "/cluster/CBIO/data1/st_segmentation/open_vizgen/RNAseg_DATASET/mouse_ileum/RNAseg_DATASET.zarr/.sopa_cache/rna_seg_1200_50"
     sdata = sd.read_zarr("/cluster/CBIO/data1/st_segmentation/open_vizgen/RNAseg_DATASET/mouse_ileum/RNAseg_DATASET.zarr")
