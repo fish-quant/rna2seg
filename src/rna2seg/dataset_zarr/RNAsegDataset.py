@@ -12,12 +12,13 @@ from time import time
 import spatialdata as sd
 from pathlib import Path
 import albumentations as A
+from typing import Optional
 from scipy import ndimage as ndi
 from torch.utils.data import Dataset
 from cellpose import transforms as tf_cp
 from albumentations.core.transforms_interface import ImageOnlyTransform
 
-from rna2seg._constant import RNAsegFiles
+from rna2seg._constant import RNA2segFiles
 from rna2seg.dataset_zarr import StainingTranscriptSegmentation
 from rna2seg.dataset_zarr.background import get_background_mask
 from rna2seg.dataset_zarr.data_augmentation import random_rotate_and_resize, cellbound_transform
@@ -323,8 +324,8 @@ class RNA2segDataset(Dataset):
                  kernel_size_background_density: None | float = 5 ,
                  kernel_size_rna2img: float = 0.5,
                  max_filter_size_rna2img: float = 2,
-                 transform_resize: A.Compose | None = None,
-                 transform_dapi: A.Compose | None = None,
+                 transform_resize: Optional[A.Compose] = None,
+                 transform_dapi: Optional[A.Compose] = None,
                  augment_rna_density: bool = False,
 
 
@@ -349,7 +350,7 @@ class RNA2segDataset(Dataset):
 
                 # path_cache
                  patch_dir : Path|str| None = None, # Transcripts
-                 experiment_name = 'input_target_rnaseg', # for dev only
+                 experiment_name = 'input_target_rna2seg', # for dev only
                  use_cache = False,
                 ## IMG AUGMENTATION
 
@@ -557,25 +558,24 @@ class RNA2segDataset(Dataset):
         if self.use_cache:
             folder_to_save = Path(self.patch_dir) / str(patch_index) / self.experiment_name
             try:
-                img_cellbound = tifffile.imread(folder_to_save / RNAsegFiles.CELLBOUND)
-                dapi = tifffile.imread(folder_to_save / RNAsegFiles.DAPI)
-                #rna_img = tifffile.imread(folder_to_save / RNAsegFiles.RNA_img) could be also save
+                img_cellbound = tifffile.imread(folder_to_save / RNA2segFiles.CELLBOUND)
+                dapi = tifffile.imread(folder_to_save / RNA2segFiles.DAPI)
                 if self.training_mode:
 
-                    mask_flow = tifffile.imread(folder_to_save / RNAsegFiles.MASK_FLOW)
-                    mask_gradient = tifffile.imread(folder_to_save / RNAsegFiles.GRADIENT)
+                    mask_flow = tifffile.imread(folder_to_save / RNA2segFiles.MASK_FLOW)
+                    mask_gradient = tifffile.imread(folder_to_save / RNA2segFiles.GRADIENT)
 
                 if self.return_flow:
-                    background = tifffile.imread(folder_to_save / RNAsegFiles.BACKGROUND)
+                    background = tifffile.imread(folder_to_save / RNA2segFiles.BACKGROUND)
                 if self.return_df:
-                    list_gene = np.load(folder_to_save / RNAsegFiles.LIST_GENE)
-                    array_coord = np.load(folder_to_save / RNAsegFiles.ARRAY_COORD)
+                    list_gene = np.load(folder_to_save / RNA2segFiles.LIST_GENE)
+                    array_coord = np.load(folder_to_save / RNA2segFiles.ARRAY_COORD)
                 if self.key_nuclei_segmentation:
-                    segmentation_nuclei = tifffile.imread(folder_to_save / RNAsegFiles.SEGMENTATION_NUCLEI)
+                    segmentation_nuclei = tifffile.imread(folder_to_save / RNA2segFiles.SEGMENTATION_NUCLEI)
 
                 path_csv =  Path(self.patch_dir) / str(patch_index)
-                bounds = json.load(open(path_csv / RNAsegFiles.BOUNDS_FILE, "r"))
-                patch_df = pd.read_csv(path_csv / RNAsegFiles.TRANSCRIPTS_FILE)
+                bounds = json.load(open(path_csv / RNA2segFiles.BOUNDS_FILE, "r"))
+                patch_df = pd.read_csv(path_csv / RNA2segFiles.TRANSCRIPTS_FILE)
 
                 bounds = bounds["bounds"]
                 rna_img = rna2img(
@@ -825,43 +825,43 @@ class RNA2segDataset(Dataset):
             img_cellbound = np.array(transformed['masks'][len_target+1:])
         else:
             raise NotImplementedError("transform should be provided")
-        rna_seg_input= np.transpose(img_input, (2, 0, 1))
+        rna2seg_input= np.transpose(img_input, (2, 0, 1))
 
         ################## save in a cache for future use ##################
-        dapi = rna_seg_input[:1]
-        rna_img = rna_seg_input[1:]
+        dapi = rna2seg_input[:1]
+        rna_img = rna2seg_input[1:]
 
         if self.use_cache:
 
             folder_to_save = Path(self.patch_dir) / str(patch_index) / self.experiment_name
             folder_to_save.mkdir(exist_ok=True, parents=False)
 
-            tifffile.imwrite(folder_to_save / RNAsegFiles.CELLBOUND, img_cellbound)
-            tifffile.imwrite(folder_to_save / RNAsegFiles.DAPI, dapi)
-            tifffile.imwrite(folder_to_save / RNAsegFiles.RNA_img, rna_img)
+            tifffile.imwrite(folder_to_save / RNA2segFiles.CELLBOUND, img_cellbound)
+            tifffile.imwrite(folder_to_save / RNA2segFiles.DAPI, dapi)
+            tifffile.imwrite(folder_to_save / RNA2segFiles.RNA_img, rna_img)
 
             ## save bounds as json
-            with open(folder_to_save / RNAsegFiles.BOUNDS_FILE, 'w') as f:
+            with open(folder_to_save / RNA2segFiles.BOUNDS_FILE, 'w') as f:
                 json.dump(bounds, f)
 
             if self.training_mode:
                 if mask_flow.shape[0] == 4:
-                    tifffile.imwrite(folder_to_save / RNAsegFiles.MASK_FLOW, mask_flow[1:].astype(float))
+                    tifffile.imwrite(folder_to_save / RNA2segFiles.MASK_FLOW, mask_flow[1:].astype(float))
                 elif mask_flow.shape[0] == 3:
-                    tifffile.imwrite(folder_to_save / RNAsegFiles.MASK_FLOW, mask_flow[:].astype(float))
+                    tifffile.imwrite(folder_to_save / RNA2segFiles.MASK_FLOW, mask_flow[:].astype(float))
 
-                tifffile.imwrite(folder_to_save / RNAsegFiles.GRADIENT, mask_gradient)
-            tifffile.imwrite(folder_to_save / RNAsegFiles.CELLBOUND, img_cellbound)
+                tifffile.imwrite(folder_to_save / RNA2segFiles.GRADIENT, mask_gradient)
+            tifffile.imwrite(folder_to_save / RNA2segFiles.CELLBOUND, img_cellbound)
 
 
             if self.return_flow:
-                tifffile.imwrite(folder_to_save / RNAsegFiles.BACKGROUND, background)
+                tifffile.imwrite(folder_to_save / RNA2segFiles.BACKGROUND, background)
 
             if self.return_df:
-                np.save(folder_to_save / RNAsegFiles.LIST_GENE, list_gene)
-                np.save(folder_to_save / RNAsegFiles.ARRAY_COORD, array_coord)
+                np.save(folder_to_save / RNA2segFiles.LIST_GENE, list_gene)
+                np.save(folder_to_save / RNA2segFiles.ARRAY_COORD, array_coord)
             if segmentation_nuclei is not None:
-                tifffile.imwrite(folder_to_save / RNAsegFiles.SEGMENTATION_NUCLEI, segmentation_nuclei)
+                tifffile.imwrite(folder_to_save / RNA2segFiles.SEGMENTATION_NUCLEI, segmentation_nuclei)
 
         return dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background, list_gene, array_coord, segmentation_nuclei, bounds
 
@@ -993,7 +993,7 @@ class RNA2segDataset(Dataset):
             list_patch_index = []
 
             for path_idx in tqdm(list_path_index):
-                if Path(path_idx / f"{self.experiment_name}/{RNAsegFiles.RNA_SEG_INPUT}").exists():
+                if Path(path_idx / f"{self.experiment_name}/{RNA2segFiles.RNA2SEG_INPUT}").exists():
                     list_patch_index.append(int(path_idx.name))
             if len(list_path_index)>0 and index_are_valid:
                 return list_patch_index
@@ -1010,7 +1010,7 @@ class RNA2segDataset(Dataset):
                 print(f"{path_idx / f'{self.experiment_name}'} does not exist check the preprocessing")
                 #continue
                 raise FileNotFoundError(f"{path_idx / f'{self.experiment_name}'} does not exist")
-            patch_df = pd.read_csv(path_idx / f"{RNAsegFiles.TRANSCRIPTS_FILE}")
+            patch_df = pd.read_csv(path_idx / f"{RNA2segFiles.TRANSCRIPTS_FILE}")
             if patch_df.empty:
                 continue
 

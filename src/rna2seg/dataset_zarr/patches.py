@@ -1,7 +1,7 @@
 
 #### tile the images
 from __future__ import annotations
-
+import json
 import shutil
 import logging
 import geopandas as gpd
@@ -15,6 +15,8 @@ from sopa._sdata import to_intrinsic
 from sopa.segmentation import Patches2D
 from sopa.patches.patches import TranscriptPatches
 
+from rna2seg._constant import RNA2segFiles
+
 import dask
 dask.config.set({'dataframe.query-planning': False})
 
@@ -23,7 +25,7 @@ dask.config.set({'dataframe.query-planning': False})
 log = logging.getLogger(__name__)
 
 
-def create_patch_rnaseg(sdata : sd.SpatialData,
+def create_patch_rna2seg(sdata : sd.SpatialData,
                         image_key : str,
                         points_key : str,
                         patch_width : int, patch_overlap : int,
@@ -47,7 +49,7 @@ def create_patch_rnaseg(sdata : sd.SpatialData,
     :type int
     :param min_transcripts_per_patch: minimum number of transcripts per patch
     :type int
-    :param folder_patch_rna2seg: folder where to save the patch, if None set to sdata.path/.rna_seg
+    :param folder_patch_rna2seg: folder where to save the patch, if None set to sdata.path/.rna2seg
     :type Path | str | None
     :param overwrite: if True overwrite the folder
     :type bool
@@ -55,7 +57,7 @@ def create_patch_rnaseg(sdata : sd.SpatialData,
 
 
     if folder_patch_rna2seg is None:
-        folder_patch_rna2seg = Path(sdata.path) / ".rna_seg"
+        folder_patch_rna2seg = Path(sdata.path) / ".rna2seg"
 
     coordinate_system = f'_{image_key}_intrinsic'
     for element in sdata._gen_spatial_element_values():
@@ -178,8 +180,7 @@ class TranscriptPatches_with_scale(TranscriptPatches):
                 assert self.temp_dir == Path(temp_dir), f"temp_dir is not the same as the one already set {self.temp_dir} != {temp_dir}"
 
         assert self.temp_dir.exists(), f"temp_dir {self.temp_dir} does not exist, save first csv file"
-        from rna2seg._constant import RNAsegFiles
-        import json
+
         patches_gdf = gpd.GeoDataFrame(geometry=self.patches_2d.polygons)
         for index, polygon in patches_gdf.iterrows() :
 
@@ -190,7 +191,7 @@ class TranscriptPatches_with_scale(TranscriptPatches):
                          "bounds_max_x" : polygon.geometry.bounds[2],
                          "bounds_max_y" : polygon.geometry.bounds[3],
                          }
-            path2save_json = self.temp_dir / f'{str(index)}/{RNAsegFiles.BOUNDS_FILE}'
+            path2save_json = self.temp_dir / f'{str(index)}/{RNA2segFiles.BOUNDS_FILE}'
             # assert not path2save_json.exists(), f"json file {path2save_json} already exists, overwriting is not allowed"
             with open(path2save_json, "w") as f:
                 json.dump(dict2json, f)
