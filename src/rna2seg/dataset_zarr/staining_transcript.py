@@ -365,9 +365,11 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             transform = rasterio.Affine(a=1, b=0, c=x_trans, d=0, e=1, f=y_trans)
 
             # Define the shape of the output numpy array
-            cell_segmentation = rasterize(((polygons[i], i+1) for i in range(len(polygons))),
-                                          out_shape=shape, transform=transform,
-                                          fill=0, all_touched=True, dtype=np.uint16)
+            cell_segmentation = rasterize(
+                ((polygons[i], i+1) for i in range(len(polygons))),
+                out_shape=shape, transform=transform,
+                fill=0, all_touched=True, dtype=np.uint16
+            )
         except ValueError as e:
             #print(e)
             assert len(polygons) == 0, "no polygon in the consistent_seg_cell"

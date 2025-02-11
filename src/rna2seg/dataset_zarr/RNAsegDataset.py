@@ -553,9 +553,9 @@ class RNA2segDataset(Dataset):
 
         ############# check if cache exist ###################
         compute_all_patch = True
-        folder_to_save = Path(self.patch_dir) / str(patch_index) / self.experiment_name
 
         if self.use_cache:
+            folder_to_save = Path(self.patch_dir) / str(patch_index) / self.experiment_name
             try:
                 img_cellbound = tifffile.imread(folder_to_save / RNAsegFiles.CELLBOUND)
                 dapi = tifffile.imread(folder_to_save / RNAsegFiles.DAPI)

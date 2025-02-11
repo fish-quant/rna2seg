@@ -28,7 +28,7 @@ def create_patch_rnaseg(sdata : sd.SpatialData,
                         points_key : str,
                         patch_width : int, patch_overlap : int,
                         min_transcripts_per_patch : int,
-                        folder_patch_rna_seg : Path | str | None = None,
+                        folder_patch_rna2seg : Path | str | None = None,
                         overwrite : bool = True):
 
     """
@@ -47,15 +47,15 @@ def create_patch_rnaseg(sdata : sd.SpatialData,
     :type int
     :param min_transcripts_per_patch: minimum number of transcripts per patch
     :type int
-    :param folder_patch_rna_seg: folder where to save the patch, if None set to sdata.path/.rna_seg
+    :param folder_patch_rna2seg: folder where to save the patch, if None set to sdata.path/.rna_seg
     :type Path | str | None
     :param overwrite: if True overwrite the folder
     :type bool
     """
 
 
-    if folder_patch_rna_seg is None:
-        folder_patch_rna_seg = Path(sdata.path) / ".rna_seg"
+    if folder_patch_rna2seg is None:
+        folder_patch_rna2seg = Path(sdata.path) / ".rna_seg"
 
     coordinate_system = f'_{image_key}_intrinsic'
     for element in sdata._gen_spatial_element_values():
@@ -79,8 +79,8 @@ def create_patch_rnaseg(sdata : sd.SpatialData,
 
 
     if not overwrite:
-        if Path(folder_patch_rna_seg).exists():
-            raise ValueError(f"folder {folder_patch_rna_seg} already exists, set overwrite to True")
+        if Path(folder_patch_rna2seg).exists():
+            raise ValueError(f"folder {folder_patch_rna2seg} already exists, set overwrite to True")
     csv_name = SopaFiles.TRANSCRIPTS_FILE
     # save a 'scaled' rna-csv  for each patch in the folder
     tp = TranscriptPatches_with_scale(
@@ -93,7 +93,7 @@ def create_patch_rnaseg(sdata : sd.SpatialData,
     )
 
     tp.write_image_scale(
-        temp_dir = folder_patch_rna_seg,
+        temp_dir = folder_patch_rna2seg,
         cell_key = None,
         unassigned_value = None,
         image_key=image_key,

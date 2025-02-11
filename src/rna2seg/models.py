@@ -325,7 +325,7 @@ class RNA2seg(nn.Module):
         masks_pred_list = []
         for k in range(len(res)):
             flow, cellprob = res[k][:2], res[k][2]
-            masks_pred, p = compute_masks(
+            masks_pred = compute_masks(
                 dP = flow.to("cpu").detach().numpy(),
                 cellprob = cellprob.to("cpu").detach().numpy(),
                 min_size=self.min_cell_size,
