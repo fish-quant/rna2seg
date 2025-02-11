@@ -63,16 +63,16 @@ except Exception as e:
 
 
 class RNAEmbedding(nn.Module):
-    def __init__(self,
-                 gene2index,
-                 embedding_dim,
-                 special_index=0,
-                 device=None,
-                 gaussian_kernel_size=0,
-                 sigma=None,
-                 radius_rna = None,
-                 ):
-
+    def __init__(
+            self,
+            gene2index,
+            embedding_dim,
+            special_index=0,
+            device=None,
+            gaussian_kernel_size=0,
+            sigma=None,
+            radius_rna = None,
+        ):
 
         super(RNAEmbedding, self).__init__()
         self.gene2index = gene2index
@@ -82,7 +82,6 @@ class RNAEmbedding(nn.Module):
         self.special_index = special_index
         # Initialize the special index with zeros and make it non-trainable
         self.embedding.weight.data[self.special_index] = torch.zeros(self.embedding_dim )
-        #self.embedding.weight.data[special_index]
         self.gaussian_kernel_size = gaussian_kernel_size
         self.device = device
         self.sigma = sigma
@@ -133,47 +132,61 @@ class RNAEmbedding(nn.Module):
 
 
 
-
-
 class RNA2seg(nn.Module):
+
+    """
+    RNA2seg: A deep learning-based method for cell segmentation using 
+    spatial transcriptomics data and membrane and nuclei stainings.
+    """
 
     def __init__(
             self,
             device,
-            nb_rna_channel: int=1,
+            pretrained_model: Path | str | None=None,
             net : str="unet",
-            nbase = [32, 64, 128, 256],
+            n_inv_chan: int=3,
+            nb_rna_channel: int=1,
             nout: int=3,
+            nbase = [32, 64, 128, 256],
             sz: int=3,
             diameter: int=30,
             flow_threshold: float=0.9,
             min_cell_size: float=200,
-            pretrained_model: Path | str | None=None,
-            n_inv_chan: int=3,
             cellbound_flow_threshold: float=0.4,
-
-            ##### RNA embedding
             gene2index = None,
-            #####
-
-
         ):
 
-
         """
-        Initialize the RNASeg.
-        Parameters:
-            device (torch device): Device used for model running, recommended if you want to use a specific GPU (e.g. torch.device("cuda:1")).
-            nbase (list): List of integers representing the number of channels in each layer of the downsample path.
-            nchan (int, optional): Number of channels to use as input to network, default is 2 (cyto + nuclei) or (nuclei + zeros).
-            nout (int, optional): Number of output channels.
-            sz (int): Size of the input image.
-            diam_mean (float, optional): Mean diameter of the cells. Defaults to 30.0.
-            pretrained_model: (str, optional): Full path to pretrained cellpose model(s), if None or False, no model loaded.
-            model_type (str, optional): The type of Cellpose model to use. Defaults to "cyto2".
+        Initialize RNA2Seg.
+
+        :param device: The computing device (e.g., "cpu" or "cuda").
+        :type device: str
+        :param pretrained_model: Path to a pretrained model. Defaults to None.
+        :type pretrained_model: Path | str | None
+        :param net: Backbone network architecture. Can be "unet" or "vmunet". Defaults to "unet".
+        :type net: str
+        :param n_inv_chan: Number of channels in staining input image. The stainings are combined and encoded into an image of n_inv_chan channels using a Channel-Net. Defaults to 3.
+        :type n_inv_chan: int
+        :param nb_rna_channel: Number of RNA channels used as input. Defaults to 1.
+        :type nb_rna_channel: int
+        :param nout: Number of output channels. Following the CellPose method, the network outputs cell probabilities on one channel and the 2-channel flow. Defaults to 3.
+        :type nout: int
+        :param nbase: List defining the number of channels at each layer of the network.
+        :type nbase: list[int]
+        :param sz: Kernel size for convolutions. Defaults to 3.
+        :type sz: int
+        :param diameter: Expected cell diameter in pixels. Defaults to 30.
+        :type diameter: int
+        :param flow_threshold: Threshold for flow consistency during segmentation. Defaults to 0.9.
+        :type flow_threshold: float
+        :param min_cell_size: Minimum cell size (in pixels) to retain. Defaults to 200.
+        :type min_cell_size: float
+        :param cellbound_flow_threshold: Threshold for cell boundary detection. Defaults to 0.4.
+        :type cellbound_flow_threshold: float
+        :param gene2index: Mapping from gene names to indices, if applicable. Defaults to None.
+        :type gene2index: dict or None
+        :raise ValueError: If an invalid model or configuration is provided.
         """
-
-
         super().__init__()
         assert nb_rna_channel is not None, "rna_channel must be provided"
         self.nb_rna_channel = nb_rna_channel
@@ -197,26 +210,29 @@ class RNA2seg(nn.Module):
             log.info("initilization RNA embedding layer")
             print("initilization RNA embedding layer")
             self.embedding_dim=3
-            self.rna_embedding = RNAEmbedding(gene2index=gene2index,
-                                              embedding_dim = self.embedding_dim,
-                                              device=self.device,
-                                              gaussian_kernel_size = 3,
-                                              sigma = 0.5,
-                                              radius_rna = 1)
+            self.rna_embedding = RNAEmbedding(
+                gene2index=gene2index,
+                embedding_dim = self.embedding_dim,
+                device=self.device,
+                gaussian_kernel_size = 3,
+                sigma = 0.5,
+                radius_rna = 1,
+            )
             self.rna_embedding = self.rna_embedding.to(device)
         else:
             self.rna_embedding = None
         self.net = self.net.to(device)
 
 
-    def forward(self,
-                input_dict=None,
-                list_gene=None,
-                array_coord=None,
-                dapi=None,
-                img_cellbound=None,
-                rna_img=None,
-                ): # to modify :  clean how RNA and staining are put in the image
+    def forward(
+            self,
+            input_dict=None,
+            list_gene=None,
+            array_coord=None,
+            dapi=None,
+            img_cellbound=None,
+            rna_img=None,
+        ): # to modify :  clean how RNA and staining are put in the image
 
 
         if input_dict is not None:
