@@ -4,7 +4,7 @@ from scipy import ndimage as ndi
 from matplotlib import colors as mcolors
 from sopa._sdata import to_intrinsic
 
-from rna2seg.dataset_zarr.RNAsegDataset import rna2img
+from rna2seg.dataset_zarr.RNA2segDataset import rna2img
 
 
 ### RNA to Image

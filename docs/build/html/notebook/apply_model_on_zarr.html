@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Training RNA2seg on Zarr-Saved SpatialData" href="train_model_on_zarr.html" /><link rel="prev" title="User guide" href="../userguide.html" />
 
     <!-- Generated with Sphinx 7.3.7 and Furo 2024.08.06 -->
-        <title>Apply RNAseg on spatial data - RNA2seg 0.0.1 documentation</title>
+        <title>Apply RNA2seg on spatial data - RNA2seg 0.0.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=362ab14a" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -202,7 +202,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation Guide</a></li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../userguide.html">User guide</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of User guide</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Apply RNAseg on spatial data</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Apply RNA2seg on spatial data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="train_model_on_zarr.html">Training RNA2seg on Zarr-Saved SpatialData</a></li>
 </ul>
 </li>
@@ -247,12 +247,12 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="Apply-RNAseg-on-spatial-data">
-<h1>Apply RNAseg on spatial data<a class="headerlink" href="#Apply-RNAseg-on-spatial-data" title="Link to this heading">¶</a></h1>
+          <section id="Apply-RNA2seg-on-spatial-data">
+<h1>Apply RNA2seg on spatial data<a class="headerlink" href="#Apply-RNA2seg-on-spatial-data" title="Link to this heading">¶</a></h1>
 <p>This notebook presents the workflow for applying RNA2Seg on Zarr-saved dataset. The process is structured into five main steps:</p>
 <ul class="simple">
 <li><p><strong>Create training patches</strong> - Extract patches of a reasonable size to process efficiently (saved in the Zarr file).</p></li>
-<li><p><strong>Initialize an RNAsegDataset</strong></p></li>
+<li><p><strong>Initialize an RNA2segDataset</strong></p></li>
 <li><p><strong>Initialize a model RNA2Seg</strong></p></li>
 <li><p><strong>Run segmentation</strong>: RNA2Seg is applied to the dataset to generate cell segmentations, which are then saved in a Zarr format.</p></li>
 <li><p><strong>Visualize segmentation</strong></p></li>
@@ -310,8 +310,8 @@ print(sdata)
 </div>
 </div>
 </section>
-<section id="Step-2:-Initialize-a-RNAsegDataset">
-<h2>Step 2: Initialize a RNAsegDataset<a class="headerlink" href="#Step-2:-Initialize-a-RNAsegDataset" title="Link to this heading">¶</a></h2>
+<section id="Step-2:-Initialize-a-RNA2segDataset">
+<h2>Step 2: Initialize a RNA2segDataset<a class="headerlink" href="#Step-2:-Initialize-a-RNA2segDataset" title="Link to this heading">¶</a></h2>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -565,9 +565,9 @@ Clipping input data to the valid range for imshow with RGB data ([0..1] for floa
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Apply RNAseg on spatial data</a><ul>
+<li><a class="reference internal" href="#">Apply RNA2seg on spatial data</a><ul>
 <li><a class="reference internal" href="#Step-1:-Create-training-patches-from-Zarr-files">Step 1: Create training patches from Zarr files</a></li>
-<li><a class="reference internal" href="#Step-2:-Initialize-a-RNAsegDataset">Step 2: Initialize a RNAsegDataset</a></li>
+<li><a class="reference internal" href="#Step-2:-Initialize-a-RNA2segDataset">Step 2: Initialize a RNA2segDataset</a></li>
 <li><a class="reference internal" href="#Step-3:-Initialize-a-model-RNA2seg">Step 3: Initialize a model RNA2seg</a></li>
 <li><a class="reference internal" href="#Step-4:-Run-segmentation">Step 4: Run segmentation</a></li>
 <li><a class="reference internal" href="#Step-5:-Visualize-segmentation">Step 5: Visualize segmentation</a></li>

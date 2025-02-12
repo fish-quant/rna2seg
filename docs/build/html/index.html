@@ -201,7 +201,7 @@
   <ul>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="userguide.html">User guide</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of User guide</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="notebook/apply_model_on_zarr.html">Apply RNAseg on spatial data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebook/apply_model_on_zarr.html">Apply RNA2seg on spatial data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebook/train_model_on_zarr.html">Training RNA2seg on Zarr-Saved SpatialData</a></li>
 </ul>
 </li>
@@ -248,8 +248,8 @@
         <article role="main" id="furo-main-content">
           <section id="welcome-to-rna2seg-s-documentation">
 <h1>Welcome to RNA2seg’s documentation!<a class="headerlink" href="#welcome-to-rna2seg-s-documentation" title="Link to this heading">¶</a></h1>
-<p><strong>RNAseg</strong> is a deep learning-based segmentation model designed to improve cell segmentation in <strong>Imaging-based Spatial Transcriptomics (IST)</strong>. Traditional IST methods rely on nuclear and membrane staining to define cell boundaries, but segmentation can be challenging due to the variable quality of membrane markers.</p>
-<p>RNAseg addresses this issue by integrating an <strong>arbitrary number of staining channels</strong> along with <strong>RNA spatial distributions</strong> to enhance segmentation accuracy, particularly in regions with low-quality membrane staining. It is built on <strong>SpatialData</strong>, enabling seamless processing and analysis of spatial transcriptomics data.</p>
+<p><strong>RNA2seg</strong> is a deep learning-based segmentation model designed to improve cell segmentation in <strong>Imaging-based Spatial Transcriptomics (IST)</strong>. Traditional IST methods rely on nuclear and membrane staining to define cell boundaries, but segmentation can be challenging due to the variable quality of membrane markers.</p>
+<p>RNA2seg addresses this issue by integrating an <strong>arbitrary number of staining channels</strong> along with <strong>RNA spatial distributions</strong> to enhance segmentation accuracy, particularly in regions with low-quality membrane staining. It is built on <strong>SpatialData</strong>, enabling seamless processing and analysis of spatial transcriptomics data.</p>
 <img alt="_images/overview.png" src="_images/overview.png" />
 <p>Check out the <a class="reference internal" href="install.html"><span class="doc">Installation Guide</span></a> section for further information about how to install the package.</p>
 </section>
@@ -261,9 +261,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="userguide.html">User guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="notebook/apply_model_on_zarr.html">Apply RNAseg on spatial data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="notebook/apply_model_on_zarr.html">Apply RNA2seg on spatial data</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="notebook/apply_model_on_zarr.html#Step-1:-Create-training-patches-from-Zarr-files">Step 1: Create training patches from Zarr files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="notebook/apply_model_on_zarr.html#Step-2:-Initialize-a-RNAsegDataset">Step 2: Initialize a RNAsegDataset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebook/apply_model_on_zarr.html#Step-2:-Initialize-a-RNA2segDataset">Step 2: Initialize a RNA2segDataset</a></li>
 <li class="toctree-l3"><a class="reference internal" href="notebook/apply_model_on_zarr.html#Step-3:-Initialize-a-model-RNA2seg">Step 3: Initialize a model RNA2seg</a></li>
 <li class="toctree-l3"><a class="reference internal" href="notebook/apply_model_on_zarr.html#Step-4:-Run-segmentation">Step 4: Run segmentation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="notebook/apply_model_on_zarr.html#Step-5:-Visualize-segmentation">Step 5: Visualize segmentation</a></li>
@@ -272,9 +272,9 @@
 <li class="toctree-l2"><a class="reference internal" href="notebook/train_model_on_zarr.html">Training RNA2seg on Zarr-Saved SpatialData</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="notebook/train_model_on_zarr.html#Import">Import</a></li>
 <li class="toctree-l3"><a class="reference internal" href="notebook/train_model_on_zarr.html#Step-1:-Create-training-patches-from-Zarr-files">Step 1: Create training patches from Zarr files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="notebook/train_model_on_zarr.html#Step-2:-Create-a-Consistent-Target-for-Training-RNAseg">Step 2: Create a Consistent Target for Training RNAseg</a></li>
+<li class="toctree-l3"><a class="reference internal" href="notebook/train_model_on_zarr.html#Step-2:-Create-a-Consistent-Target-for-Training-RNA2seg">Step 2: Create a Consistent Target for Training RNA2seg</a></li>
 <li class="toctree-l3"><a class="reference internal" href="notebook/train_model_on_zarr.html#Step-3:-Training-RNA2seg">Step 3: Training RNA2seg</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="notebook/train_model_on_zarr.html#Initialize-a-RNAsegDataset">Initialize a RNAsegDataset</a></li>
+<li class="toctree-l4"><a class="reference internal" href="notebook/train_model_on_zarr.html#Initialize-a-RNA2segDataset">Initialize a RNA2segDataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="notebook/train_model_on_zarr.html#Train-/-Validataion-split">Train / Validataion split</a></li>
 <li class="toctree-l4"><a class="reference internal" href="notebook/train_model_on_zarr.html#Initialize-Dataloaders">Initialize Dataloaders</a></li>
 <li class="toctree-l4"><a class="reference internal" href="notebook/train_model_on_zarr.html#Initilize-RNA2seg-Model">Initilize RNA2seg Model</a></li>
@@ -286,8 +286,8 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module_rna2seg.html">Modules</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_rna2seg.html#rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="module_rna2seg.html#rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset.set_threshold"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.set_threshold()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="module_rna2seg.html#rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="module_rna2seg.html#rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset.set_threshold"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.set_threshold()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="module_rna2seg.html#rna2seg.models.RNA2seg"><code class="docutils literal notranslate"><span class="pre">RNA2seg</span></code></a><ul>
@@ -313,7 +313,7 @@
 <p>If you use this library, please be sure to cite:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>@article{
     author = {Thomas Defard1, Alice Blonde, Anthony Coleon,Guilherme Dias de Melo, Thomas Walter, Florian Mueller},
-    title = {RNAseg: a generalist model for cell segmentation in image-based spatial transcriptomics},
+    title = {RNA2seg: a generalist model for cell segmentation in image-based spatial transcriptomics},
     journal = {Journal Name},
     year = {2025},
     volume = {50},

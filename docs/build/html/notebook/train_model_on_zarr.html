@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Modules" href="../module_rna2seg.html" /><link rel="prev" title="Apply RNAseg on spatial data" href="apply_model_on_zarr.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Modules" href="../module_rna2seg.html" /><link rel="prev" title="Apply RNA2seg on spatial data" href="apply_model_on_zarr.html" />
 
     <!-- Generated with Sphinx 7.3.7 and Furo 2024.08.06 -->
         <title>Training RNA2seg on Zarr-Saved SpatialData - RNA2seg 0.0.1 documentation</title>
@@ -202,7 +202,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation Guide</a></li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../userguide.html">User guide</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of User guide</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="apply_model_on_zarr.html">Apply RNAseg on spatial data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apply_model_on_zarr.html">Apply RNA2seg on spatial data</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Training RNA2seg on Zarr-Saved SpatialData</a></li>
 </ul>
 </li>
@@ -326,11 +326,11 @@ print(sdata)
 </div>
 </div>
 </section>
-<section id="Step-2:-Create-a-Consistent-Target-for-Training-RNAseg">
-<h2>Step 2: Create a Consistent Target for Training RNAseg<a class="headerlink" href="#Step-2:-Create-a-Consistent-Target-for-Training-RNAseg" title="Link to this heading">¶</a></h2>
+<section id="Step-2:-Create-a-Consistent-Target-for-Training-RNA2seg">
+<h2>Step 2: Create a Consistent Target for Training RNA2seg<a class="headerlink" href="#Step-2:-Create-a-Consistent-Target-for-Training-RNA2seg" title="Link to this heading">¶</a></h2>
 <div class="line-block">
 <div class="line"><strong>Input:</strong> Spatial data with potentially erroneous nucleus and cell segmentations.</div>
-<div class="line"><strong>Output:</strong> Curated cell and nucleus segmentations for training RNAseg. Saved in the zarr.</div>
+<div class="line"><strong>Output:</strong> Curated cell and nucleus segmentations for training RNA2seg. Saved in the zarr.</div>
 </div>
 <div class="line-block">
 <div class="line">This step refines two segmentations stored in the Zarr file: <strong>cell segmentation</strong> (<code class="docutils literal notranslate"><span class="pre">key_shape_cell_seg</span></code>) and <strong>nuclei segmentation</strong> (<code class="docutils literal notranslate"><span class="pre">key_nuclei_segmentation</span></code>).</div>
@@ -347,7 +347,7 @@ print(sdata)
 </li>
 <li><p>Save the refined segmentations back into the Zarr file.</p></li>
 </ol>
-<p>This ensures high-quality annotations for training or fine-tuning RNAseg.</p>
+<p>This ensures high-quality annotations for training or fine-tuning RNA2seg.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
@@ -380,8 +380,8 @@ sdata, _ = compute_consistent_cell(
 <section id="Step-3:-Training-RNA2seg">
 <h2>Step 3: Training RNA2seg<a class="headerlink" href="#Step-3:-Training-RNA2seg" title="Link to this heading">¶</a></h2>
 <p>Now, we will train RNA2seg using the target segmentation created in Step 2.</p>
-<section id="Initialize-a-RNAsegDataset">
-<h3>Initialize a RNAsegDataset<a class="headerlink" href="#Initialize-a-RNAsegDataset" title="Link to this heading">¶</a></h3>
+<section id="Initialize-a-RNA2segDataset">
+<h3>Initialize a RNA2segDataset<a class="headerlink" href="#Initialize-a-RNA2segDataset" title="Link to this heading">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
@@ -733,7 +733,7 @@ training: 100%|██████████| 22/22 [01:26&lt;00:00,  3.94s/it]
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Apply RNAseg on spatial data</div>
+                <div class="title">Apply RNA2seg on spatial data</div>
                 
               </div>
             </a>
@@ -770,9 +770,9 @@ training: 100%|██████████| 22/22 [01:26&lt;00:00,  3.94s/it]
 <li><a class="reference internal" href="#">Training RNA2seg on Zarr-Saved SpatialData</a><ul>
 <li><a class="reference internal" href="#Import">Import</a></li>
 <li><a class="reference internal" href="#Step-1:-Create-training-patches-from-Zarr-files">Step 1: Create training patches from Zarr files</a></li>
-<li><a class="reference internal" href="#Step-2:-Create-a-Consistent-Target-for-Training-RNAseg">Step 2: Create a Consistent Target for Training RNAseg</a></li>
+<li><a class="reference internal" href="#Step-2:-Create-a-Consistent-Target-for-Training-RNA2seg">Step 2: Create a Consistent Target for Training RNA2seg</a></li>
 <li><a class="reference internal" href="#Step-3:-Training-RNA2seg">Step 3: Training RNA2seg</a><ul>
-<li><a class="reference internal" href="#Initialize-a-RNAsegDataset">Initialize a RNAsegDataset</a></li>
+<li><a class="reference internal" href="#Initialize-a-RNA2segDataset">Initialize a RNA2segDataset</a></li>
 <li><a class="reference internal" href="#Train-/-Validataion-split">Train / Validataion split</a></li>
 <li><a class="reference internal" href="#Initialize-Dataloaders">Initialize Dataloaders</a></li>
 <li><a class="reference internal" href="#Initilize-RNA2seg-Model">Initilize RNA2seg Model</a></li>

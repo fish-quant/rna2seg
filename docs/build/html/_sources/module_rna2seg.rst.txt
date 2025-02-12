@@ -1,7 +1,7 @@
 Modules
 ---------------
 
-.. autoclass:: rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset
+.. autoclass:: rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset
    :members:
    :undoc-members:
    :show-inheritance:

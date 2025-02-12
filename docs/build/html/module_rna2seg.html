@@ -201,7 +201,7 @@
   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="userguide.html">User guide</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of User guide</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="notebook/apply_model_on_zarr.html">Apply RNAseg on spatial data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="notebook/apply_model_on_zarr.html">Apply RNA2seg on spatial data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="notebook/train_model_on_zarr.html">Training RNA2seg on Zarr-Saved SpatialData</a></li>
 </ul>
 </li>
@@ -249,12 +249,12 @@
           <section id="modules">
 <h1>Modules<a class="headerlink" href="#modules" title="Link to this heading">¶</a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rna2seg.dataset_zarr.RNAsegDataset.</span></span><span class="sig-name descname"><span class="pre">RNA2segDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rna2seg.dataset_zarr.RNA2segDataset.</span></span><span class="sig-name descname"><span class="pre">RNA2segDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></p>
 <dl class="py method">
-<dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset.set_threshold">
-<span class="sig-name descname"><span class="pre">set_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_nb_crops</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200,</span> <span class="pre">1200)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset.set_threshold" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset.set_threshold">
+<span class="sig-name descname"><span class="pre">set_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_nb_crops</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200,</span> <span class="pre">1200)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset.set_threshold" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -468,8 +468,8 @@ Defaults to None.</p></li>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Modules</a><ul>
-<li><a class="reference internal" href="#rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset</span></code></a><ul>
-<li><a class="reference internal" href="#rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset.set_threshold"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.set_threshold()</span></code></a></li>
+<li><a class="reference internal" href="#rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset</span></code></a><ul>
+<li><a class="reference internal" href="#rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset.set_threshold"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.set_threshold()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#rna2seg.models.RNA2seg"><code class="docutils literal notranslate"><span class="pre">RNA2seg</span></code></a><ul>

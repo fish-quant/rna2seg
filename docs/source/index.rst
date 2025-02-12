@@ -6,9 +6,9 @@
 Welcome to RNA2seg's documentation!
 ===================================
 
-**RNAseg** is a deep learning-based segmentation model designed to improve cell segmentation in **Imaging-based Spatial Transcriptomics (IST)**. Traditional IST methods rely on nuclear and membrane staining to define cell boundaries, but segmentation can be challenging due to the variable quality of membrane markers.  
+**RNA2seg** is a deep learning-based segmentation model designed to improve cell segmentation in **Imaging-based Spatial Transcriptomics (IST)**. Traditional IST methods rely on nuclear and membrane staining to define cell boundaries, but segmentation can be challenging due to the variable quality of membrane markers.  
 
-RNAseg addresses this issue by integrating an **arbitrary number of staining channels** along with **RNA spatial distributions** to enhance segmentation accuracy, particularly in regions with low-quality membrane staining. It is built on **SpatialData**, enabling seamless processing and analysis of spatial transcriptomics data.  
+RNA2seg addresses this issue by integrating an **arbitrary number of staining channels** along with **RNA spatial distributions** to enhance segmentation accuracy, particularly in regions with low-quality membrane staining. It is built on **SpatialData**, enabling seamless processing and analysis of spatial transcriptomics data.  
 
 .. image:: ../../img/overview.png
 
@@ -42,7 +42,7 @@ If you use this library, please be sure to cite:
 
    @article{
        author = {Thomas Defard1, Alice Blonde, Anthony Coleon,Guilherme Dias de Melo, Thomas Walter, Florian Mueller},
-       title = {RNAseg: a generalist model for cell segmentation in image-based spatial transcriptomics},
+       title = {RNA2seg: a generalist model for cell segmentation in image-based spatial transcriptomics},
        journal = {Journal Name},
        year = {2025},
        volume = {50},
