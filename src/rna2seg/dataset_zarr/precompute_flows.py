@@ -91,7 +91,7 @@ def precompute_flow(sdata,
             f.write(str(nb_cell))
 
 
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     channel_dapi = ["DAPI"]
     list_path_index = None
     segmentation_key = "manual_annotation_for_finetuning"
@@ -104,4 +104,4 @@ if __name__ == "__main__":
     precompute_flow(
         sdata, image_key, shape_patch_key, segmentation_key, channel_dapi, 
         patch_dir_csv,  key_cell=key_cell, list_path_index=list_path_index, shape  = (1200, 1200),
-    )
+    )"""

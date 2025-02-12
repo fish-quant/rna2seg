@@ -304,6 +304,8 @@ def remove_cell_in_background(agreement_segmentation,
 
 class RNAsegDataset(Dataset):
 
+    "test"
+
     def __init__(self,
 
                  sdata : sd.SpatialData,
@@ -592,9 +594,6 @@ class RNAsegDataset(Dataset):
                 gaussian_kernel_size=self.kernel_size_rna2img, max_filter_size=self.max_filter_size_rna2img,
                 addition_mode=self.addition_mode)
 
-
-
-
                 compute_all_patch = False
 
             except  Exception as e:
@@ -764,7 +763,7 @@ class RNAsegDataset(Dataset):
             background = get_background_mask(density_threshold= self.st_segmentation.density_threshold,
                                              df_crop = patch_df,
                                              shape = dapi.shape,
-                                             kernel_size=self.kernel_size_background_density ,
+                                             kernel_size=self.kernel_size_background_density,
                                              column_y = "y",
                                              column_x = "x",
                                              offset_x = bounds[0],

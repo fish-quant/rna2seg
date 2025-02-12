@@ -68,27 +68,12 @@ cellbound_transform = A.Compose([
     A.RandomBrightnessContrast(brightness_limit=0.25, contrast_limit=0.25, p=0.2),
     A.GaussianBlur(blur_limit=(3, 7), p=0.2),
     A.CoarseDropout(max_holes=2, max_height=400, max_width=400, min_holes=1, min_height=1, min_width=1, p=0.2),
+    CoarseDropoutOneChannel(max_holes=2, max_height=400, max_width=400, min_holes=1, min_height=100, min_width=100, p=0.2),
     # A.HueSaturationValue(hue_shift_limit=0.01, sat_shift_limit=0.01, val_shift_limit=0.01, p=0.2),
     RandomChannelSwap(always_apply=False, p=0.2),
 ])
 
-cellbound_transform2 = A.Compose([
-        A.RandomBrightnessContrast(brightness_limit=0.25, contrast_limit=0.25, p=0.3),
-        A.GaussianBlur(blur_limit=(3, 11), p=0.3),
-        A.CoarseDropout(max_holes=2, max_height=400, max_width=400, min_holes=1, min_height=100, min_width=100, p=0.3),
-        CoarseDropoutOneChannel(max_holes=2, max_height=400, max_width=400, min_holes=1, min_height=100, min_width=100, p=0.2),
-        # A.HueSaturationValue(hue_shift_limit=0.01, sat_shift_limit=0.01, val_shift_limit=0.01, p=0.2),
-        RandomChannelSwap(always_apply=False, p=0.6),
-    ])
 
-cellbound_transform3 = A.Compose([
-    A.RandomBrightnessContrast(brightness_limit=(-0.7, 0.7), contrast_limit=(-0.7, 0.7), p=0.5),
-    A.GaussianBlur(blur_limit=(3, 25), p=0.5),
-    A.CoarseDropout(max_holes=2, max_height=400, max_width=400, min_holes=1, min_height=100, min_width=100, p=0.3),
-    CoarseDropoutOneChannel(max_holes=2, max_height=400, max_width=400, min_holes=1, min_height=100, min_width=100, p=0.2),
-    # A.HueSaturationValue(hue_shift_limit=0.01, sat_shift_limit=0.01, val_shift_limit=0.01, p=0.2),
-    RandomChannelSwap(always_apply=False, p=0.6),
-])
 ### RNA Embedding Transformations
 
 import numpy as np
