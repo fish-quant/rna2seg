@@ -1,8 +1,8 @@
 import cv2
-import matplotlib.pyplot as plt
+import tifffile
 import numpy as np
 import albumentations as A
-import tifffile
+import matplotlib.pyplot as plt
 from cellpose.transforms import random_rotate_and_resize as _random_rotate_and_resize
 
 ### Input image and Target image Transformations 
@@ -76,8 +76,6 @@ cellbound_transform = A.Compose([
 
 ### RNA Embedding Transformations
 
-import numpy as np
-
 def add_noise_to_gene_embeddings(gene2vect, noise_level=0.01, p=0.5):
     noisy_embeddings = {}
     for gene, emb in gene2vect.items():
@@ -120,31 +118,3 @@ def augment_embeddings(gene2vect,
         min_shift=min_shift,  max_shift=max_shift, p=shift_p)
     return augmented
 
-if False:
-
-    import tifffile
-    input_image = tifffile.imread("/media/tom/T5 EVO/test_fig_spurious/breast/rna_seg_7000_50/131/segmentation_exploration/3_img_cellbound.tif")
-    input_image = input_image[None, ...]
-    input_image = input_image[:, :2000, :2000]
-    mask_flow = np.random.rand(1,2000,2000)
-
-
-
-    transform = A.Compose([
-        A.RandomScale(scale_limit=(-0.5, 0.5), interpolation=1, p=0.5, always_apply=None),
-        A.PadIfNeeded(min_height=2000, min_width=2000, border_mode=cv2.BORDER_CONSTANT, value=0, p=0.75),
-        A.CropNonEmptyMaskIfExists(height=2000, width=2000, p=1.0),
-        A.RandomResizedCrop(height=2000, width=2000, scale=(0.5, 1), ratio=(0.75, 1.33), p=0.5)
-        ])
-    from matplotlib import pyplot as plt
-
-    for i in range(10):
-        l = transform(image=np.transpose(input_image, (1, 2, 0))#, mask=mask_flow)
-        , mask=np.transpose(mask_flow, (1, 2, 0)))
-        print(l['image'].shape, l['mask'].shape)
-        image = l['image']
-        p2, p98 = np.percentile(image, (1, 99))
-        from skimage import exposure
-        image_rescale = exposure.rescale_intensity(image, in_range=(p2, p98))
-        plt.imshow(image_rescale)
-        plt.show()

@@ -10,7 +10,7 @@ import scipy
 from tqdm import tqdm
 from pathlib import Path
 ######### use the coexpression matrix to embedd the gene in 2D where similar gene are close to each other
-from rna2seg._constant import RNAsegFiles
+from rna2seg._constant import RNA2segFiles
 
 
 def count_matrix_in_situ_from_knn(list_gene,
@@ -204,12 +204,12 @@ if __name__ == "__main__":
 
     ### transform this script into a command line tool with argparse
     import argparse
-    from rna_seg.dataset_zarr.gene2color.gene2color import (
+    from rna2seg.dataset_zarr.gene2color.gene2color import (
         get_gene_pca_vector,
         get_concatenated_gene_vector,
         get_one_hot_encoded_vector,
     )
-    from rna_seg.dataset_zarr.gene2color.utils import get_gene_random_vector
+    from rna2seg.dataset_zarr.gene2color.utils import get_gene_random_vector
 
     parser = argparse.ArgumentParser()
 
@@ -261,7 +261,7 @@ if __name__ == "__main__":
         # random shuffle the list of index
         np.random.shuffle(list_path_index)
         for path_index in tqdm(list_path_index):
-            path_df = path_index  / RNAsegFiles.TRANSCRIPTS_FILE
+            path_df = path_index  / RNA2segFiles.TRANSCRIPTS_FILE
             if not path_df.exists():
                 continue
             df = pd.read_csv(path_df)

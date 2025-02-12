@@ -58,7 +58,7 @@ def partial_cellpose_loss(lbl, y, device, mask_gradient):
 def train_one_epoch(
                     device : torch.device | str,
                     epoch_index : int,
-                    rnaseg : nn.Module,
+                    rna2seg : nn.Module,
                     training_loader : torch.utils.data.dataloader.DataLoader,
                     optimizer   : torch.optim.Optimizer,
                     print_loss_every = 4,
@@ -78,7 +78,7 @@ def train_one_epoch(
     epoch_index :
     tb_writer
     device
-    rnaseg : model
+    rna2seg : model
     training_loader
     optimizer
     print_loss_every : print loss every x batch
@@ -93,13 +93,12 @@ def train_one_epoch(
 
 
 
-    rnaseg.net.train()
+    rna2seg.net.train()
     running_loss = 0.
-    rnaseg.to(device)
+    rna2seg.to(device)
 
     for i_train, dict_result in tqdm(enumerate(training_loader), file = sys.stdout,
                                      total=len(training_loader), desc="training"): #, file = sys.stdout, total=len(training_loader)):#
-        print(f"batch {i_train}")
 
 
         loss = _run(dict_result=dict_result,
@@ -109,7 +108,7 @@ def train_one_epoch(
                     no_cellbound_first_iter=no_cellbound_first_iter,
                     cellbound_index_to_use=cellbound_index_to_use,
                     cellbound_prob=cellbound_prob,
-                    rnaseg=rnaseg,
+                    rna2seg=rna2seg,
                     optimizer=optimizer,
                     zeroing_dapi = zeroing_dapi)
 
@@ -122,7 +121,6 @@ def train_one_epoch(
 
             last_loss = running_loss / print_loss_every # loss per batch
 
-            print('  batch nb {} loss: {} '.format(i_train + 1, last_loss))
             tb_x = epoch_index * len(training_loader) + i_train + 1
             if tb_writer is not None:
                 tb_writer.add_scalar('Loss/train', last_loss, tb_x)
@@ -131,10 +129,9 @@ def train_one_epoch(
             ## validation loss
 
             if validation_loader is not None:
-                rnaseg.eval()
+                rna2seg.eval()
                 with torch.no_grad():
                     for i_test, dict_result_val in enumerate(validation_loader):
-                        print(f"batch {i_test}")
                         loss_val = _run(dict_result=dict_result_val,
                                            rna_emb=rna_emb,
                                            device=device,
@@ -142,7 +139,7 @@ def train_one_epoch(
                                            no_cellbound_first_iter=no_cellbound_first_iter,
                                            cellbound_index_to_use=cellbound_index_to_use,
                                            cellbound_prob=cellbound_prob,
-                                           rnaseg=rnaseg,
+                                           rna2seg=rna2seg,
                                            optimizer=optimizer,
                                             zeroing_dapi = zeroing_dapi,
                                              path_save_model=path_save_model,
@@ -164,18 +161,18 @@ def train_one_epoch(
                         if last_loss_valid < best_val_loss:
                             best_val_loss = last_loss_valid
                             print(f"best_val_loss: {best_val_loss}")
-                            torch.save(rnaseg.net.state_dict(), Path(path_save_model) / f"model_best_{epoch_index}_{i_train}.pt")
-                            torch.save(rnaseg.net.state_dict(), Path(path_save_model) / f"best.pt")
-                            if rnaseg.rna_embedding is not None:
-                                torch.save(rnaseg.rna_embedding.state_dict(), Path(path_save_model) / f"model_best_rna_embedding{epoch_index}_{i_train}.pt")
-                                torch.save(rnaseg.rna_embedding.state_dict(), Path(path_save_model) / f"best_rna_embedding.pt")
+                            torch.save(rna2seg.net.state_dict(), Path(path_save_model) / f"model_best_{epoch_index}_{i_train}.pt")
+                            torch.save(rna2seg.net.state_dict(), Path(path_save_model) / f"best.pt")
+                            if rna2seg.rna_embedding is not None:
+                                torch.save(rna2seg.rna_embedding.state_dict(), Path(path_save_model) / f"model_best_rna_embedding{epoch_index}_{i_train}.pt")
+                                torch.save(rna2seg.rna_embedding.state_dict(), Path(path_save_model) / f"best_rna_embedding.pt")
 
                     else:
                         best_val_loss = last_loss_valid
                         print(f"best_val_loss: {best_val_loss}")
 
 
-                rnaseg.train()
+                rna2seg.train()
 
                 ## save intermediate results
 
@@ -220,7 +217,7 @@ def _run(dict_result,
          no_cellbound_first_iter,
          cellbound_index_to_use,
          cellbound_prob,
-         rnaseg,
+         rna2seg,
          optimizer,
          zeroing_dapi,
          path_save_model=None,
@@ -256,7 +253,7 @@ def _run(dict_result,
                                                                cellbound_index_to_use = cellbound_index_to_use,
                                                                zeroing_dapi = zeroing_dapi)
 
-    rnaseg.train()
+    rna2seg.train()
     optimizer.zero_grad()
     label = label.to(device)
     dapi = dapi.to(device)
@@ -267,7 +264,7 @@ def _run(dict_result,
     rna_img = rna_img.to(torch.float32)
     img_cellbound = img_cellbound.to(torch.float32)
 
-    output = rnaseg(
+    output = rna2seg(
                     list_gene=list_gene,
                     array_coord=array_coord,
                     dapi=dapi,

@@ -1,26 +1,22 @@
-
 import dask
 dask.config.set({'dataframe.query-planning': False})
+
 import os
-import numpy as np
-from cellpose import models
-from cellpose.models import model_path
-from cellpose.resnet_torch import CPnet
-from cellpose.dynamics import compute_masks
-from sopa.segmentation.shapes import rasterize
+import cv2
 import torch
-import torch.nn as nn
 import logging
-from torchvision.transforms.functional import gaussian_blur
-from torchvision.transforms.functional import gaussian_blur
+import numpy as np
+import geopandas as gpd
+import torch.nn as nn
 from pathlib import Path
 import albumentations as A
-import cv2
-import geopandas as gpd
+from sopa.segmentation import shapes
+from cellpose.resnet_torch import CPnet
+from cellpose.dynamics import compute_masks
+from torchvision.transforms.functional import gaussian_blur
+from instanseg.utils.models.ChannelInvariantNet import AdaptorNetWrapper
 
 log = logging.getLogger(__name__)
-
-
 
 
 class CustomCPnet(CPnet):
@@ -61,18 +57,17 @@ except Exception as e:
     print(e)
     print("VMUnet not loaded")
 
-
 class RNAEmbedding(nn.Module):
-    def __init__(self,
-                 gene2index,
-                 embedding_dim,
-                 special_index=0,
-                 device=None,
-                 gaussian_kernel_size=0,
-                 sigma=None,
-                 radius_rna = None,
-                 ):
-
+    def __init__(
+            self,
+            gene2index,
+            embedding_dim,
+            special_index=0,
+            device=None,
+            gaussian_kernel_size=0,
+            sigma=None,
+            radius_rna = None,
+        ):
 
         super(RNAEmbedding, self).__init__()
         self.gene2index = gene2index
@@ -82,7 +77,6 @@ class RNAEmbedding(nn.Module):
         self.special_index = special_index
         # Initialize the special index with zeros and make it non-trainable
         self.embedding.weight.data[self.special_index] = torch.zeros(self.embedding_dim )
-        #self.embedding.weight.data[special_index]
         self.gaussian_kernel_size = gaussian_kernel_size
         self.device = device
         self.sigma = sigma
@@ -131,49 +125,61 @@ class RNAEmbedding(nn.Module):
         return rna_imgs
 
 
-
-
-
-
 class RNA2seg(nn.Module):
+
+    """
+    RNA2seg: A deep learning-based method for cell segmentation using 
+    spatial transcriptomics data and membrane and nuclei stainings.
+    """
 
     def __init__(
             self,
             device,
-            nb_rna_channel: int=1,
+            pretrained_model: Path | str | None=None,
             net : str="unet",
-            nbase = [32, 64, 128, 256],
+            n_inv_chan: int=3,
+            nb_rna_channel: int=1,
             nout: int=3,
+            nbase = [32, 64, 128, 256],
             sz: int=3,
             diameter: int=30,
             flow_threshold: float=0.9,
             min_cell_size: float=200,
-            pretrained_model: Path | str | None=None,
-            n_inv_chan: int=3,
             cellbound_flow_threshold: float=0.4,
-
-            ##### RNA embedding
             gene2index = None,
-            #####
-
-
         ):
 
-
         """
-        Initialize the RNASeg.
-        Parameters:
-            device (torch device): Device used for model running, recommended if you want to use a specific GPU (e.g. torch.device("cuda:1")).
-            nbase (list): List of integers representing the number of channels in each layer of the downsample path.
-            nchan (int, optional): Number of channels to use as input to network, default is 2 (cyto + nuclei) or (nuclei + zeros).
-            nout (int, optional): Number of output channels.
-            sz (int): Size of the input image.
-            diam_mean (float, optional): Mean diameter of the cells. Defaults to 30.0.
-            pretrained_model: (str, optional): Full path to pretrained cellpose model(s), if None or False, no model loaded.
-            model_type (str, optional): The type of Cellpose model to use. Defaults to "cyto2".
+        Initialize RNA2Seg.
+
+        :param device: The computing device (e.g., "cpu" or "cuda").
+        :type device: str
+        :param pretrained_model: Path to a pretrained model. Defaults to None.
+        :type pretrained_model: Path | str | None
+        :param net: Backbone network architecture. Can be "unet" or "vmunet". Defaults to "unet".
+        :type net: str
+        :param n_inv_chan: Number of channels in staining input image. The stainings are combined and encoded into an image of n_inv_chan channels using a Channel-Net. Defaults to 3.
+        :type n_inv_chan: int
+        :param nb_rna_channel: Number of RNA channels used as input. Defaults to 1.
+        :type nb_rna_channel: int
+        :param nout: Number of output channels. Following the CellPose method, the network outputs cell probabilities on one channel and the 2-channel flow. Defaults to 3.
+        :type nout: int
+        :param nbase: List defining the number of channels at each layer of the network.
+        :type nbase: list[int]
+        :param sz: Kernel size for convolutions. Defaults to 3.
+        :type sz: int
+        :param diameter: Expected cell diameter in pixels. Defaults to 30.
+        :type diameter: int
+        :param flow_threshold: Threshold for flow consistency during segmentation. Defaults to 0.9.
+        :type flow_threshold: float
+        :param min_cell_size: Minimum cell size (in pixels) to retain. Defaults to 200.
+        :type min_cell_size: float
+        :param cellbound_flow_threshold: Threshold for cell boundary detection. Defaults to 0.4.
+        :type cellbound_flow_threshold: float
+        :param gene2index: Mapping from gene names to indices, if applicable. Defaults to None.
+        :type gene2index: dict or None
+        :raise ValueError: If an invalid model or configuration is provided.
         """
-
-
         super().__init__()
         assert nb_rna_channel is not None, "rna_channel must be provided"
         self.nb_rna_channel = nb_rna_channel
@@ -197,27 +203,58 @@ class RNA2seg(nn.Module):
             log.info("initilization RNA embedding layer")
             print("initilization RNA embedding layer")
             self.embedding_dim=3
-            self.rna_embedding = RNAEmbedding(gene2index=gene2index,
-                                              embedding_dim = self.embedding_dim,
-                                              device=self.device,
-                                              gaussian_kernel_size = 3,
-                                              sigma = 0.5,
-                                              radius_rna = 1)
+            self.rna_embedding = RNAEmbedding(
+                gene2index=gene2index,
+                embedding_dim = self.embedding_dim,
+                device=self.device,
+                gaussian_kernel_size = 3,
+                sigma = 0.5,
+                radius_rna = 1,
+            )
             self.rna_embedding = self.rna_embedding.to(device)
         else:
             self.rna_embedding = None
         self.net = self.net.to(device)
 
+    def forward(
+            self,
+            input_dict=None,
+            list_gene=None,
+            array_coord=None,
+            dapi=None,
+            img_cellbound=None,
+            rna_img=None,
+        ): # to modify :  clean how RNA and staining are put in the image
 
-    def forward(self,
-                input_dict=None,
-                list_gene=None,
-                array_coord=None,
-                dapi=None,
-                img_cellbound=None,
-                rna_img=None,
-                ): # to modify :  clean how RNA and staining are put in the image
+        """
+        Forward pass for the RNA2seg model.
 
+        The `forward` method supports two modes of input:
+            1. You can pass a dictionary (`input_dict`) containing all the relevant inputs ('list_gene', 'array_coord', 'dapi', 'img_cellbound', and 'rna_img'). If provided, the values in the dictionary will override the individual function arguments.
+            2. Alternatively, you can pass each argument independently.
+
+        The DAPI and cell boundary images are used for encoding, and the RNA image (either encoded or pre-encoded) is combined with the other inputs. The concatenated data is then passed through the model to generate the output.
+    
+        
+        :param input_dict: Optional dictionary containing the following keys: 'list_gene', 'array_coord', 'dapi', 'img_cellbound', and 'rna_img'. If provided, the values will override the function arguments.
+        :type input_dict: dict | None
+        :param list_gene: Tensor representing the list of genes for RNA encoding. Cannot be provided simultaneously with `rna_img`. Defaults to None.
+        :type list_gene: torch.Tensor | None
+        :param array_coord: Tensor containing the coordinates for RNA encoding. Required if `list_gene` is provided.
+        :type array_coord: torch.Tensor | None
+        :param dapi: Tensor representing the DAPI staining image, used as input for encoding.
+        :type dapi: torch.Tensor
+        :param img_cellbound: Tensor representing the cell boundary image, used as input for encoding.
+        :type img_cellbound: torch.Tensor
+        :param rna_img: Tensor representing the pre-encoded RNA image. Cannot be provided simultaneously with `list_gene`. Defaults to None.
+        :type rna_img: torch.Tensor | None
+
+        :returns: Tensor representing the model's output after processing the input data.
+        :rtype: torch.Tensor
+
+        :raises AssertionError: If neither `list_gene` nor `rna_img` is provided, or if both are provided simultaneously.
+        :raises AssertionError: If `array_coord` is not provided when `list_gene` is used.
+        """
 
         if input_dict is not None:
             list_gene = input_dict.get('list_gene', list_gene)
@@ -251,9 +288,32 @@ class RNA2seg(nn.Module):
 
         return out
 
-    def encode(self, imgs=None,
-               dapi=None,
-               img_cellbound=None): # to modify :  clean how RNA and staining are put in the image
+    def encode(
+            self, 
+            imgs=None,
+            dapi=None,
+            img_cellbound=None
+        ): # to modify :  clean how RNA and staining are put in the image
+
+        """
+        Encodes the input images (DAPI and cell boundary) for the model.
+
+        The method supports two modes of input:
+            1. You can pass a tensor `imgs` containing the full image data.
+            2. Alternatively, you can pass DAPI and cell boundary images separately (`dapi` and `img_cellbound`). These two images are concatenated along the channel dimension and then passed through the network.
+        
+        :param imgs: Tensor containing the full set of image channels, including RNA channels. This is kept for compatibility with the old version. Defaults to None.
+        :type imgs: torch.Tensor | None
+        :param dapi: Tensor representing the DAPI staining image, used for encoding. Must be provided if `img_cellbound` is provided.
+        :type dapi: torch.Tensor | None
+        :param img_cellbound: Tensor representing the cell boundary image, used for encoding. Must be provided if `dapi` is provided.
+        :type img_cellbound: torch.Tensor | None
+
+        :returns: Tensor representing the encoded image data, after processing through the network's `AdaptorNet`.
+        :rtype: torch.Tensor
+
+        :raises AssertionError: If `imgs` is provided while `dapi` and `img_cellbound` are also provided, or if neither is provided when one of them is required.
+        """
 
         if imgs is not None: ## old version to delete, only kept for compatibility
             assert dapi is None
@@ -270,10 +330,9 @@ class RNA2seg(nn.Module):
 
         return out
 
-
-    def run(self,
+    def run(
+            self,
             path_temp_save,
-            min_area = 0,
             input_dict=None,
             list_gene=None,
             array_coord=None,
@@ -281,16 +340,34 @@ class RNA2seg(nn.Module):
             img_cellbound=None,
             rna_img=None,
             bounds=None,
-            ):
+            min_area = 0,
+        ):
+
         """
         Evaluates the model on a batch of images or a single image, and optionally on staining images.
-        Args:
-            imgs (torch.Tensor): The input images.
-            loss (str): The loss function to use. Defaults to "cellpose".
-        Returns:
-            torch.Tensor: The predicted flow.
-            torch.Tensor: The predicted cell probability.
-            np.array: The predicted masks.
+
+        :param path_temp_save: The directory where the results will be saved.
+        :type path_temp_save: str | Path
+        :param input_dict: A dictionary containing the inputs for the model. It can include 'list_gene', 
+                    'array_coord', 'dapi', 'img_cellbound', 'rna_img', and 'bounds'.
+        :type input_dict: dict | None
+        :param list_gene: List of gene expressions to use for encoding RNA. Defaults to None.
+        :type list_gene: torch.Tensor | None
+        :param array_coord: Coordinates array for the genes, required if `list_gene` is provided.
+        :type array_coord: torch.Tensor | None
+        :param dapi: DAPI stained image used for encoding.
+        :type dapi: torch.Tensor
+        :param img_cellbound: Image of cell boundaries used for encoding.
+        :type img_cellbound: torch.Tensor
+        :param rna_img: RNA image, either encoded or pre-encoded.
+        :type rna_img: torch.Tensor | None
+        :param bounds: Bounds for the image, used for transformations. Defaults to None.
+        :type bounds: list | None
+        :param min_area: The minimum area to consider for detected cells. Defaults to 0 (no filtering).
+        :type min_area: int
+
+        :return: A tuple containing the flow, cell probability, predicted masks, and cells (as a GeoDataFrame).
+        :rtype: tuple (torch.Tensor, torch.Tensor, np.array, GeoDataFrame)
         """
         Path(path_temp_save).mkdir(parents=True, exist_ok=True)
         if input_dict is not None:
@@ -305,7 +382,7 @@ class RNA2seg(nn.Module):
         if "rna_embedding" in self.__dict__ and self.rna_embedding is not None:
             self.rna_embedding.eval()
 
-        ## check if the input is a batch or a single image
+        # Check if the input is a batch or a single image
         if dapi.dim() == 3:
             dapi = dapi.unsqueeze(0)
             img_cellbound = img_cellbound.unsqueeze(0)
@@ -314,18 +391,20 @@ class RNA2seg(nn.Module):
                 list_gene = list_gene.unsqueeze(0)
                 array_coord = array_coord.unsqueeze(0)
 
+        # Forward
         res = self.forward(list_gene=list_gene,
                            array_coord=array_coord,
                            dapi=dapi,
                            img_cellbound=img_cellbound,
                            rna_img=rna_img)
 
+        # Compute masks
         flow_list = []
         cellprob_list = []
         masks_pred_list = []
         for k in range(len(res)):
             flow, cellprob = res[k][:2], res[k][2]
-            masks_pred, p = compute_masks(
+            masks_pred = compute_masks(
                 dP = flow.to("cpu").detach().numpy(),
                 cellprob = cellprob.to("cpu").detach().numpy(),
                 min_size=self.min_cell_size,
@@ -342,14 +421,9 @@ class RNA2seg(nn.Module):
         cellprob = torch.stack(cellprob_list, dim=0)
         masks_pred = np.stack(masks_pred_list, axis=0)
 
-
-    ##################
-        from sopa.segmentation import shapes
-
+        # Transform to original size
         assert input_dict['bounds'][0] - input_dict['bounds'][2] == input_dict['bounds'][1] - input_dict['bounds'][3], "image must be square"
-
         original_image_shape = input_dict['bounds'][2] - input_dict['bounds'][0]
-
         transforms_img1 = A.Compose([
             A.Resize(
                 width=original_image_shape,
@@ -357,23 +431,16 @@ class RNA2seg(nn.Module):
                 interpolation=cv2.INTER_NEAREST
             ),
         ])
-
         masks_pred =  transforms_img1(image=masks_pred[0])["image"]
-
-
-
-
-        cells = shapes.geometrize(masks_pred,
-                                  tolerance = None,
-                                  smooth_radius_ratio = 0.1)
+        
+        # Create cells shape
+        cells = shapes.geometrize(masks_pred, tolerance = None, smooth_radius_ratio = 0.1)
         print(f'{len(cells)} cells detected')
         cells = cells[cells.area >= self.min_area] if min_area > 0 else cells
-
         cells = gpd.GeoDataFrame(geometry=cells)
-
         cells.geometry = cells.translate(*input_dict['bounds'][:2])
 
-        ## save the cells as parquet
+        # Save the cells as parquet
         if path_temp_save is not None and input_dict is not None:
             cells.to_parquet(path_temp_save / f"{input_dict['idx']}.parquet")
 
@@ -382,29 +449,29 @@ class RNA2seg(nn.Module):
     def save_model(self, filename):
         """
         Save the model to a file.
-        Args:
-            filename (str): The path to the file where the model will be saved.
+
+        :param filename: The path to the file where the model will be saved.
+        :type filename: str
         """
         torch.save(self.net.state_dict(), filename)
 
     def load_model(self, filename, device=None):
+
         """
         Load the model from a file.
-        Args:
-            filename (str): The path to the file where the model is saved.
-            device (torch.device, optional): The device to load the model on. Defaults to None.
-        """
-        #if self.channel_invariant:
+
+        :param filename: The path to the file where the model is saved.
+        :type filename: str
+        :param device: The device to load the model on. If None, the model is loaded on the CPU. 
+                    Defaults to None.
+        :type device: torch.device | None
+        """ 
         model_dict = torch.load(filename, map_location='cpu')
         self.net.load_state_dict(model_dict, strict=True)
-        #else:
-        #    self.net.load_model(filename)
-
         self.net.to(device)
 
     def _set_net(self, nbase, ):
-        #nchan = self.n_inv_chan #if self.channel_invariant else self.nchan
-        #if self.rna_not_in_ChannelNet:
+
         nchan = self.n_inv_chan + self.nb_rna_channel
         if self.net_archi=="unet":
             print("initiaisation of CPnet")
@@ -412,15 +479,11 @@ class RNA2seg(nn.Module):
             self.net = CustomCPnet(nbase=nbase, nout=self.nout, sz=self.sz, mkldnn=False, diam_mean=self.diameter)
         elif self.net_archi=="vmunet":
             print("initiaisation of VMUNet")
-            self.net = CustomVMUnet(num_classes=self.nout, input_channels=nchan,
-                                    # depths=[2,2,2,2], depths_decoder=[2,2,2,1], drop_path_rate=0.2,
-                                    )
+            self.net = CustomVMUnet(num_classes=self.nout, input_channels=nchan)
         else:
             raise ValueError(f"Model not implemented: {self.net}")
 
-        #if self.channel_invariant:
         print("Initiaisation of ChannelInvariantNet")
-        from instanseg.utils.models.ChannelInvariantNet import AdaptorNetWrapper
         model = self.net
         self.net = AdaptorNetWrapper(model, out_channels=self.n_inv_chan)
 

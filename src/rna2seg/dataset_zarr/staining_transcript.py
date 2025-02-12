@@ -1,36 +1,33 @@
 
 #### tile the images
 from __future__ import annotations
+
 import sys
 import logging
-from pathlib import Path
-from typing import Callable
-from sopa._constants import SopaFiles, SopaKeys
-
-import numpy as np
-import pandas as pd
 import rasterio
 import tifffile
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+import geopandas as gpd
+from pathlib import Path
+from shapely import Polygon
+from skimage import exposure
 from rasterio.features import rasterize
 from scipy.ndimage import gaussian_filter
-from skimage import exposure
+from cellpose.dynamics import  labels_to_flows
+from spatialdata import SpatialData
 from sopa._constants import SopaFiles
 from sopa.segmentation.stainings import StainingSegmentation
-from spatialdata import SpatialData
 
-from shapely import Polygon
+from rna2seg._constant import RNA2segFiles
+from rna2seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
 from rna2seg.dataset_zarr.consistency import compute_polygon_intersection
 
 log = logging.getLogger(__name__)
-from tqdm import tqdm
 
-import geopandas as gpd
-from rna2seg._constant import RNAsegFiles
-from cellpose.dynamics import  labels_to_flows
-from rna2seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
 import dask
 dask.config.set({'dataframe.query-planning': False})
-
 dask.config.set(scheduler='synchronous')
 
 class StainingTranscriptSegmentation(StainingSegmentation):
@@ -46,7 +43,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             key_cell_consistent  : str | None = None,
             key_nucleus_consistent : str | None = None,
             density_threshold : float | None = None,
-            patch_dir_csv : str | Path | None = None,
+            patch_dir : str | Path | None = None,
             min_area: float = 0,
             clip_limit: float = 0,
             gaussian_sigma: float = 0,
@@ -115,16 +112,14 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             if key is not None:
                 assert key in self.sdata.shapes, f"{key} not in sdata.shapes {self.sdata.shapes}"
 
-
-
         if self.key_cell_consistent is not None: # to remove
                 self.cell_consistent_with_nuclei =  self.sdata[self.key_cell_consistent_with_nuclei]
                 self.cell_consistent_without_nuclei =  self.sdata[self.key_cell_consistent_without_nuclei ]
 
         self.density_threshold = density_threshold
-        self.patch_dir_csv = patch_dir_csv
-        if self.patch_dir_csv is None:
-            self.patch_dir_csv = Path(self.sdata.path) / ".rna_seg"
+        self.patch_dir = patch_dir
+        if self.patch_dir is None:
+            self.patch_dir = Path(self.sdata.path) / ".rna2seg"
         self.shape_patch_key = shape_patch_key
 
         self.y_max = sdata[self.image_key]["scale0"].dims['y']
@@ -164,7 +159,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         else:
             image = np.zeros(( bounds[3] - bounds[1], bounds[2] - bounds[0]), dtype=np.uint16)
 
-        patch_df = pd.read_csv(Path(self.patch_dir_csv) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
+        patch_df = pd.read_csv(Path(self.patch_dir) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
 
         if return_agg_segmentation:
             assert self.key_cell_consistent is not None, "aggrement segmentation is not loaded/ initialized"
@@ -234,7 +229,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         Compute the density threshold for a list of patch
         :param list_path_index:
         :param shape_segmentation_key:
-        :param patch_dir_csv:
+        :param patch_dir:
         :param shape:
         :param kernel_size: kernel size for the density mask estiamtion with gaussina filter
         :param percentile_threshold:  use as example :  np.percentile(all_list_density, percentile_threshold = 7)
@@ -254,7 +249,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             patch = self.sdata[self.shape_patch_key].geometry[patch_index]
             bounds = [int(x) for x in patch.bounds]
             gdf_polygon_segmentation = segmentation_shapes.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
-            patch_df = pd.read_csv(Path(self.patch_dir_csv) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
+            patch_df = pd.read_csv(Path(self.patch_dir) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
 
             if len(patch_df) == 0 or len(gdf_polygon_segmentation) == 0:
                 continue
@@ -303,7 +298,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
 
 
             if min_transcripts > 0:
-                patch_df = pd.read_csv(Path(self.patch_dir_csv) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
+                patch_df = pd.read_csv(Path(self.patch_dir) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
                 if len(patch_df) < min_transcripts:
                     continue
 
@@ -370,9 +365,11 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             transform = rasterio.Affine(a=1, b=0, c=x_trans, d=0, e=1, f=y_trans)
 
             # Define the shape of the output numpy array
-            cell_segmentation = rasterize(((polygons[i], i+1) for i in range(len(polygons))),
-                                          out_shape=shape, transform=transform,
-                                          fill=0, all_touched=True, dtype=np.uint16)
+            cell_segmentation = rasterize(
+                ((polygons[i], i+1) for i in range(len(polygons))),
+                out_shape=shape, transform=transform,
+                fill=0, all_touched=True, dtype=np.uint16
+            )
         except ValueError as e:
             #print(e)
             assert len(polygons) == 0, "no polygon in the consistent_seg_cell"
@@ -413,14 +410,14 @@ class StainingTranscriptSegmentation(StainingSegmentation):
                                     key_cell=key_cell)
 
 
-            path_save = Path(self.patch_dir_csv) / f'{patch_index}/{key_cell}'
+            path_save = Path(self.patch_dir) / f'{patch_index}/{key_cell}'
             path_save.mkdir(exist_ok=True, parents=True)
             if shape is None:
-                tifffile.imwrite(path_save / RNAsegFiles.IMAGE, image)
+                tifffile.imwrite(path_save / RNA2segFiles.IMAGE, image)
             if compute_cellpose:
                 flow = labels_to_flows([full_segmentation], files=None,
                                            device=None, redo_flows=False)
-                np.save(path_save / RNAsegFiles.LABEL_AND_MASK_FLOW, flow[0])
+                np.save(path_save / RNA2segFiles.LABEL_AND_MASK_FLOW, flow[0])
 
             if compute_omnipose:
                 flow = labels_to_flows_omnipose(labels=[full_segmentation],
@@ -431,15 +428,9 @@ class StainingTranscriptSegmentation(StainingSegmentation):
                 omni=True,
                 redo_flows=True,
                 dim=2)
-                np.save(path_save / RNAsegFiles.LABEL_AND_MASK_FLOW_OMNIPOSE, flow[0])
+                np.save(path_save / RNA2segFiles.LABEL_AND_MASK_FLOW_OMNIPOSE, flow[0])
             ## save the nb of cell in a file
             nb_cell = len(np.unique(flow[0][0])) - 1
-            with open(path_save / RNAsegFiles.NB_CELL_FILE, "w") as f:
+            with open(path_save / RNA2segFiles.NB_CELL_FILE, "w") as f:
                 f.write(str(nb_cell))
 
-
-
-
-
-
-## equivalent method sopa.segmentation.methods.cellpose_patch to write for rnaseg

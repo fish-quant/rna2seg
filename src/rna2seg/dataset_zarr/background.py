@@ -2,11 +2,9 @@
 #### tile the images
 from __future__ import annotations
 
-from time import time
-
-import geopandas as gpd
-import numpy as np
 import rasterio
+import numpy as np
+import geopandas as gpd
 from rasterio.features import rasterize
 from scipy.ndimage import gaussian_filter
 
