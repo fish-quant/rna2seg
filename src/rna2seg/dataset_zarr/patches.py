@@ -34,27 +34,26 @@ def create_patch_rna2seg(sdata : sd.SpatialData,
                         overwrite : bool = True):
 
     """
+    Creates patches from the spatial data to handle data in manageable sizes.
+    Save the patches shapes into the zarr and precomputes transcript.csv files for each patch.
 
-    create patch shape in the sdata and precompute the transcript.csv for each patch
-
-    :param sdata: SpatialData
-    :type SpatialData
-    :param image_key: key of the image in the sdata
-    :type str
-    :param points_key: key of the points in the sdata
-    :type str
-    :param patch_width: width of the patch
-    :type int
-    :param patch_overlap: overlap of the patch
-    :type int
-    :param min_transcripts_per_patch: minimum number of transcripts per patch
-    :type int
-    :param folder_patch_rna2seg: folder where to save the patch, if None set to sdata.path/.rna2seg
-    :type Path | str | None
-    :param overwrite: if True overwrite the folder
-    :type bool
+    :param sdata: SpatialData object containing the spatial dataset.
+    :type SpatialData:
+    :param image_key: Key identifying the image in sdata.
+    :type str:
+    :param points_key: Key identifying the points in sdata.
+    :type str:
+    :param patch_width: Width of each patch.
+    :type int:
+    :param patch_overlap: Overlap between adjacent patches.
+    :type int:
+    :param min_transcripts_per_patch: Minimum number of transcripts required for a patch.
+    :type int:
+    :param folder_patch_rna2seg: Directory where patches will be saved. If None, defaults to sdata.path/.rna2seg.
+    :type Path | str | None:
+    :param overwrite: Whether to overwrite the existing patches shape if it already exists in the zarr.
+    :type bool:
     """
-
 
     if folder_patch_rna2seg is None:
         folder_patch_rna2seg = Path(sdata.path) / ".rna2seg"

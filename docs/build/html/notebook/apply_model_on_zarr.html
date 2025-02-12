@@ -270,8 +270,8 @@ from pathlib import Path
 </pre></div>
 </div>
 </div>
-<section id="Step-1:-Create-training-patches-from-Zarr-files">
-<h2>Step 1: Create training patches from Zarr files<a class="headerlink" href="#Step-1:-Create-training-patches-from-Zarr-files" title="Link to this heading">¶</a></h2>
+<section id="Step-1:-Create-patches-from-Zarr-files">
+<h2>Step 1: Create patches from Zarr files<a class="headerlink" href="#Step-1:-Create-patches-from-Zarr-files" title="Link to this heading">¶</a></h2>
 <p>In this step, the dataset (image + transcripts) is divided into patches of size <code class="docutils literal notranslate"><span class="pre">patch_width</span> <span class="pre">×</span> <span class="pre">patch_width</span></code> with an overlap of <code class="docutils literal notranslate"><span class="pre">patch_overlap</span></code>. This allows processing images of a manageable size while preserving spatial continuity.</p>
 <p><strong>Process</strong></p>
 <ul class="simple">
@@ -566,7 +566,7 @@ Clipping input data to the valid range for imshow with RGB data ([0..1] for floa
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Apply RNA2seg on spatial data</a><ul>
-<li><a class="reference internal" href="#Step-1:-Create-training-patches-from-Zarr-files">Step 1: Create training patches from Zarr files</a></li>
+<li><a class="reference internal" href="#Step-1:-Create-patches-from-Zarr-files">Step 1: Create patches from Zarr files</a></li>
 <li><a class="reference internal" href="#Step-2:-Initialize-a-RNA2segDataset">Step 2: Initialize a RNA2segDataset</a></li>
 <li><a class="reference internal" href="#Step-3:-Initialize-a-model-RNA2seg">Step 3: Initialize a model RNA2seg</a></li>
 <li><a class="reference internal" href="#Step-4:-Run-segmentation">Step 4: Run segmentation</a></li>

@@ -1,7 +1,8 @@
 Modules
 ---------------
 
-.. autoclass:: rna2seg.dataset_zarr.RNA2segDataset.RNA2segDataset
+.. autoclass:: rna2seg.dataset_zarr.RNA2segDataset
+   :special-members: __init__
    :members:
    :undoc-members:
    :show-inheritance:
@@ -11,3 +12,7 @@ Modules
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+.. autofunction:: rna2seg.dataset_zarr.patches.create_patch_rna2seg
+
