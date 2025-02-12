@@ -41,7 +41,7 @@ If you use this library, please be sure to cite:
 .. code-block:: text
 
    @article{
-       author = {Thomas Defard1, Alice Blonde, Anthony Coleon,Guilherme Dias de Melo, Thomas Walter, Florian Mueller},
+       author = {Thomas Defard, Alice Blondel, Anthony Coleon, Guilherme Dias de Melo, Thomas Walter, Florian Mueller},
        title = {RNA2seg: a generalist model for cell segmentation in image-based spatial transcriptomics},
        journal = {Journal Name},
        year = {2025},

@@ -350,14 +350,14 @@ Number of valid patches: 64
 <section id="Step-3:-Initialize-a-model-RNA2seg">
 <h2>Step 3: Initialize a model RNA2seg<a class="headerlink" href="#Step-3:-Initialize-a-model-RNA2seg" title="Link to this heading">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from rna2seg.models import RNA2seg
 
 pretrained_model = &quot;/Users/alice/Documents/data/Cell_Segmentation/best.pt&quot;
 device = &quot;cpu&quot;
-rnaseg = RNA2seg(
+rna2seg = RNA2seg(
     device,
     net=&#39;unet&#39;,
     flow_threshold = 0.9,
@@ -393,7 +393,7 @@ from rna2seg.utils import save_shapes2zarr
 segmentation_shape_name = &quot;test&quot;
 for i in tqdm(range(len(dataset))):
     input_dict = dataset[i]
-    rnaseg.run(
+    rna2seg.run(
         path_temp_save=folder_patch_rna2seg,
         input_dict=input_dict
     )

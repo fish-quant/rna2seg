@@ -557,19 +557,19 @@ Using device: mps
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>rnaseg = RNA2seg(
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>rna2seg = RNA2seg(
     device,
     net=&#39;unet&#39;,
     flow_threshold = 0.9,
     cellbound_flow_threshold = 0.4,
     pretrained_model = None,
 )
-rnaseg = rnaseg.to(device)
+rna2seg = rna2seg.to(device)
 
-optimizer = torch.optim.AdamW(rnaseg.parameters(), lr=0.001, weight_decay=0.01)
+optimizer = torch.optim.AdamW(rna2seg.parameters(), lr=0.001, weight_decay=0.01)
 <br/></pre></div>
 </div>
 </div>
@@ -586,7 +586,7 @@ Initiaisation of ChannelInvariantNet
 <section id="Training-RNA2seg">
 <h3>Training RNA2seg<a class="headerlink" href="#Training-RNA2seg" title="Link to this heading">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from rna2seg.train import train_one_epoch
@@ -599,7 +599,7 @@ for epoch_index in tqdm(range(3)):
     train_one_epoch(
         device=device,
         epoch_index=epoch_index,
-        rnaseg=rnaseg,
+        rna2seg=rna2seg,
         training_loader=training_loader,
         optimizer=optimizer,
         print_loss_every = int(len(training_loader) /3),
