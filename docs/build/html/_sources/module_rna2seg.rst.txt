@@ -1,8 +1,6 @@
 Modules
 ---------------
 
-you can use the ``rna2seg.RNA2segDataset`` function:
-
 .. autoclass:: rna2seg.dataset_zarr.RNAsegDataset.RNA2segDataset
    :members:
    :undoc-members:

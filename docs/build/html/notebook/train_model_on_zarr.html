@@ -297,10 +297,10 @@ from rna2seg.dataset_zarr import (
 <li><p>The transcript information for each patch is saved in CSV format for further processing.</p></li>
 </ul>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from rna2seg.dataset_zarr import create_patch_rnaseg
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from rna2seg.dataset_zarr import create_patch_rna2seg
 
 ### load sdata and set path parameters
 merfish_zarr_path = &quot;/Users/alice/Documents/data/Cell_Segmentation/test_mouse_ileum.zarr&quot;
@@ -313,7 +313,7 @@ min_transcripts_per_patch = 0
 folder_patch_rna2seg = Path(merfish_zarr_path) / &quot;.rna2seg&quot;
 
 ### create patch in the sdata and precompute transcipt.csv for each patch with sopa
-create_patch_rnaseg(sdata,
+create_patch_rna2seg(sdata,
                     image_key=image_key,
                     points_key=points_key,
                     patch_width=patch_width,
