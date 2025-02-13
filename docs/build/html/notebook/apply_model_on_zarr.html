@@ -325,7 +325,7 @@ print(sdata)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[########################################] | 100% Completed | 15.77 ss
+[########################################] | 100% Completed | 15.50 ss
 SpatialData object, with associated Zarr store: /Users/alice/Documents/data/Cell_Segmentation/test_mouse_ileum.zarr
 ├── Images
 │     └── &#39;staining_z3&#39;: DataTree[cyx] (5, 9000, 9000), (5, 4500, 4500), (5, 2250, 2250), (5, 1125, 1125), (5, 562, 562)
@@ -333,13 +333,24 @@ SpatialData object, with associated Zarr store: /Users/alice/Documents/data/Cell
 │     └── &#39;transcripts&#39;: DataFrame with shape: (&lt;Delayed&gt;, 9) (2D points)
 └── Shapes
       ├── &#39;Cellbound1&#39;: GeoDataFrame shape: (3258, 1) (2D shapes)
+      ├── &#39;Cellbound1_consistent_with_nuclei&#39;: GeoDataFrame shape: (1007, 1) (2D shapes)
+      ├── &#39;Cellbound1_consistent_without_nuclei&#39;: GeoDataFrame shape: (2239, 1) (2D shapes)
       ├── &#39;DAPI&#39;: GeoDataFrame shape: (2377, 1) (2D shapes)
+      ├── &#39;DAPI_consistent_in_cell&#39;: GeoDataFrame shape: (1007, 1) (2D shapes)
+      ├── &#39;DAPI_consistent_not_in_cell&#39;: GeoDataFrame shape: (1370, 1) (2D shapes)
+      ├── &#39;rna2seg_test&#39;: GeoDataFrame shape: (3617, 1) (2D shapes)
+      ├── &#39;rna2seg_test_v0&#39;: GeoDataFrame shape: (3617, 1) (2D shapes)
+      ├── &#39;sopa_patches_rna2seg_1200_50&#39;: GeoDataFrame shape: (64, 3) (2D shapes)
       └── &#39;sopa_patches_rna2seg_1200_150&#39;: GeoDataFrame shape: (81, 3) (2D shapes)
 with coordinate systems:
     ▸ &#39;_staining_z3_intrinsic&#39;, with elements:
         staining_z3 (Images)
+    ▸ &#39;global&#39;, with elements:
+        rna2seg_test (Shapes), rna2seg_test_v0 (Shapes)
     ▸ &#39;microns&#39;, with elements:
-        staining_z3 (Images), transcripts (Points), Cellbound1 (Shapes), DAPI (Shapes), sopa_patches_rna2seg_1200_150 (Shapes)
+        staining_z3 (Images), transcripts (Points), Cellbound1 (Shapes), Cellbound1_consistent_with_nuclei (Shapes), Cellbound1_consistent_without_nuclei (Shapes), DAPI (Shapes), DAPI_consistent_in_cell (Shapes), DAPI_consistent_not_in_cell (Shapes), sopa_patches_rna2seg_1200_50 (Shapes), sopa_patches_rna2seg_1200_150 (Shapes)
+with the following elements not in the Zarr store:
+    ▸ rna2seg_test (Shapes)
 </pre></div></div>
 </div>
 </section>
@@ -375,39 +386,63 @@ dataset = RNA2segDataset(
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 default shape_patch_key set to sopa_patches_rna2seg_1200_150
-100%|██████████| 81/81 [00:02&lt;00:00, 39.74it/s]
+100%|██████████| 81/81 [00:01&lt;00:00, 45.07it/s]
 Number of valid patches: 64
 </pre></div></div>
 </div>
 </section>
 <section id="Step-3:-Initialize-a-model-RNA2seg">
 <h2>Step 3: Initialize a model RNA2seg<a class="headerlink" href="#Step-3:-Initialize-a-model-RNA2seg" title="Link to this heading">¶</a></h2>
+<p>By default, the trained RNA2seg model is downloaded from Hugging Face. You can also specify <code class="docutils literal notranslate"><span class="pre">pretrained_model</span></code> to use your own RNA2seg model.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from rna2seg.models import RNA2seg
 
-pretrained_model = &quot;/Users/alice/Documents/data/Cell_Segmentation/best.pt&quot;
-device = &quot;cpu&quot;
+device = &quot;mps&quot;
 rna2seg = RNA2seg(
     device,
     net=&#39;unet&#39;,
     flow_threshold = 0.9,
     cellbound_flow_threshold = 0.4,
-    pretrained_model = pretrained_model,
 )
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
+No module named &#39;vmunet&#39;
+VMUnet not loaded
 initiaisation of CPnet
 Initiaisation of ChannelInvariantNet
-Loading weights from /Users/alice/Documents/data/Cell_Segmentation/best.pt
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Fetching 3 files: 100%|██████████| 3/3 [00:00&lt;00:00, 22192.08it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Loading weights from /Users/alice/.cache/huggingface/hub/models--aliceblondel--RNA2seg/snapshots/26f9afe181ea58f808ecd9c0732c327936020b18/rna2seg.pt
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+
 </pre></div></div>
 </div>
 </section>
@@ -415,7 +450,7 @@ Loading weights from /Users/alice/Documents/data/Cell_Segmentation/best.pt
 <h2>Step 4: Run segmentation<a class="headerlink" href="#Step-4:-Run-segmentation" title="Link to this heading">¶</a></h2>
 <p>We will run the segmentation on the entire dataset and save the results as a shape in the Zarr file.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from tqdm import tqdm
@@ -439,7 +474,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
   0%|          | 0/64 [00:00&lt;?, ?it/s]<span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
-  2%|▏         | 1/64 [00:03&lt;04:02,  3.84s/it]
+  2%|▏         | 1/64 [00:01&lt;01:53,  1.80s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -456,7 +491,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
-  3%|▎         | 2/64 [00:07&lt;03:53,  3.77s/it]
+  3%|▎         | 2/64 [00:03&lt;01:41,  1.63s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -473,7 +508,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
-  5%|▍         | 3/64 [00:10&lt;03:37,  3.56s/it]
+  5%|▍         | 3/64 [00:04&lt;01:23,  1.37s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -490,7 +525,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
-  6%|▋         | 4/64 [00:14&lt;03:41,  3.68s/it]
+  6%|▋         | 4/64 [00:06&lt;01:33,  1.56s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -507,7 +542,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
-  8%|▊         | 5/64 [00:18&lt;03:35,  3.65s/it]
+  8%|▊         | 5/64 [00:07&lt;01:30,  1.54s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -524,7 +559,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
-  9%|▉         | 6/64 [00:21&lt;03:28,  3.59s/it]
+  9%|▉         | 6/64 [00:09&lt;01:27,  1.51s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -541,7 +576,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 11%|█         | 7/64 [00:24&lt;03:11,  3.35s/it]
+ 11%|█         | 7/64 [00:09&lt;01:13,  1.28s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -558,7 +593,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 12%|█▎        | 8/64 [00:27&lt;02:59,  3.20s/it]
+ 12%|█▎        | 8/64 [00:10&lt;01:00,  1.08s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -575,7 +610,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 14%|█▍        | 9/64 [00:30&lt;02:58,  3.24s/it]
+ 14%|█▍        | 9/64 [00:11&lt;01:03,  1.16s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -592,7 +627,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 16%|█▌        | 10/64 [00:34&lt;03:06,  3.45s/it]
+ 16%|█▌        | 10/64 [00:13&lt;01:12,  1.34s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -609,7 +644,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 17%|█▋        | 11/64 [00:38&lt;03:06,  3.51s/it]
+ 17%|█▋        | 11/64 [00:15&lt;01:15,  1.43s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -626,7 +661,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 19%|█▉        | 12/64 [00:42&lt;03:12,  3.71s/it]
+ 19%|█▉        | 12/64 [00:17&lt;01:28,  1.70s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -643,7 +678,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 20%|██        | 13/64 [00:46&lt;03:06,  3.66s/it]
+ 20%|██        | 13/64 [00:19&lt;01:25,  1.67s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -660,7 +695,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 22%|██▏       | 14/64 [00:49&lt;02:55,  3.51s/it]
+ 22%|██▏       | 14/64 [00:20&lt;01:15,  1.52s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -677,7 +712,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 23%|██▎       | 15/64 [00:52&lt;02:47,  3.43s/it]
+ 23%|██▎       | 15/64 [00:21&lt;01:07,  1.37s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -694,7 +729,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 25%|██▌       | 16/64 [00:55&lt;02:38,  3.30s/it]
+ 25%|██▌       | 16/64 [00:22&lt;00:58,  1.23s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -711,7 +746,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 27%|██▋       | 17/64 [00:59&lt;02:41,  3.43s/it]
+ 27%|██▋       | 17/64 [00:23&lt;01:02,  1.32s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -728,7 +763,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 28%|██▊       | 18/64 [01:03&lt;02:44,  3.59s/it]
+ 28%|██▊       | 18/64 [00:25&lt;01:07,  1.46s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -745,7 +780,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 30%|██▉       | 19/64 [01:06&lt;02:39,  3.55s/it]
+ 30%|██▉       | 19/64 [00:26&lt;01:04,  1.42s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -762,7 +797,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 31%|███▏      | 20/64 [01:10&lt;02:43,  3.72s/it]
+ 31%|███▏      | 20/64 [00:29&lt;01:10,  1.61s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -779,7 +814,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 33%|███▎      | 21/64 [01:14&lt;02:38,  3.69s/it]
+ 33%|███▎      | 21/64 [00:30&lt;01:07,  1.57s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -796,7 +831,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 34%|███▍      | 22/64 [01:17&lt;02:25,  3.46s/it]
+ 34%|███▍      | 22/64 [00:31&lt;00:56,  1.35s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -813,7 +848,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 36%|███▌      | 23/64 [01:20&lt;02:17,  3.34s/it]
+ 36%|███▌      | 23/64 [00:32&lt;00:49,  1.21s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -830,7 +865,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 38%|███▊      | 24/64 [01:23&lt;02:12,  3.31s/it]
+ 38%|███▊      | 24/64 [00:33&lt;00:48,  1.20s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -847,7 +882,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 39%|███▉      | 25/64 [01:28&lt;02:22,  3.66s/it]
+ 39%|███▉      | 25/64 [00:36&lt;01:03,  1.62s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -864,7 +899,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 41%|████      | 26/64 [01:32&lt;02:30,  3.96s/it]
+ 41%|████      | 26/64 [00:38&lt;01:11,  1.89s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -881,7 +916,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 42%|████▏     | 27/64 [01:36&lt;02:24,  3.90s/it]
+ 42%|████▏     | 27/64 [00:40&lt;01:06,  1.79s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -898,7 +933,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 44%|████▍     | 28/64 [01:39&lt;02:11,  3.66s/it]
+ 44%|████▍     | 28/64 [00:40&lt;00:54,  1.52s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -915,7 +950,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 45%|████▌     | 29/64 [01:42&lt;02:02,  3.50s/it]
+ 45%|████▌     | 29/64 [00:42&lt;00:48,  1.37s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -932,7 +967,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 47%|████▋     | 30/64 [01:46&lt;01:59,  3.51s/it]
+ 47%|████▋     | 30/64 [00:43&lt;00:45,  1.34s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -949,7 +984,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 48%|████▊     | 31/64 [01:49&lt;01:52,  3.41s/it]
+ 48%|████▊     | 31/64 [00:44&lt;00:40,  1.23s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -966,7 +1001,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 50%|█████     | 32/64 [01:54&lt;02:00,  3.77s/it]
+ 50%|█████     | 32/64 [00:46&lt;00:51,  1.61s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -983,7 +1018,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 52%|█████▏    | 33/64 [01:58&lt;01:59,  3.85s/it]
+ 52%|█████▏    | 33/64 [00:48&lt;00:53,  1.73s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1000,7 +1035,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 53%|█████▎    | 34/64 [02:01&lt;01:52,  3.75s/it]
+ 53%|█████▎    | 34/64 [00:50&lt;00:49,  1.66s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1017,7 +1052,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 55%|█████▍    | 35/64 [02:05&lt;01:45,  3.65s/it]
+ 55%|█████▍    | 35/64 [00:51&lt;00:44,  1.55s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1034,7 +1069,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 56%|█████▋    | 36/64 [02:08&lt;01:39,  3.54s/it]
+ 56%|█████▋    | 36/64 [00:52&lt;00:40,  1.45s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1051,7 +1086,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 58%|█████▊    | 37/64 [02:12&lt;01:38,  3.64s/it]
+ 58%|█████▊    | 37/64 [00:54&lt;00:42,  1.57s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1068,7 +1103,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 59%|█████▉    | 38/64 [02:15&lt;01:30,  3.49s/it]
+ 59%|█████▉    | 38/64 [00:55&lt;00:36,  1.40s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1085,7 +1120,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 61%|██████    | 39/64 [02:19&lt;01:28,  3.55s/it]
+ 61%|██████    | 39/64 [00:57&lt;00:35,  1.42s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1102,7 +1137,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 62%|██████▎   | 40/64 [02:23&lt;01:34,  3.94s/it]
+ 62%|██████▎   | 40/64 [00:59&lt;00:43,  1.82s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1119,7 +1154,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 64%|██████▍   | 41/64 [02:27&lt;01:31,  3.96s/it]
+ 64%|██████▍   | 41/64 [01:01&lt;00:43,  1.88s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1136,7 +1171,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 66%|██████▌   | 42/64 [02:31&lt;01:22,  3.75s/it]
+ 66%|██████▌   | 42/64 [01:03&lt;00:37,  1.70s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1153,7 +1188,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 67%|██████▋   | 43/64 [02:35&lt;01:22,  3.95s/it]
+ 67%|██████▋   | 43/64 [01:05&lt;00:38,  1.85s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1170,7 +1205,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 69%|██████▉   | 44/64 [02:39&lt;01:17,  3.90s/it]
+ 69%|██████▉   | 44/64 [01:07&lt;00:36,  1.80s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1187,7 +1222,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 70%|███████   | 45/64 [02:43&lt;01:17,  4.06s/it]
+ 70%|███████   | 45/64 [01:09&lt;00:36,  1.94s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1204,7 +1239,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 72%|███████▏  | 46/64 [02:48&lt;01:17,  4.28s/it]
+ 72%|███████▏  | 46/64 [01:12&lt;00:39,  2.21s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1221,7 +1256,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 73%|███████▎  | 47/64 [02:53&lt;01:15,  4.42s/it]
+ 73%|███████▎  | 47/64 [01:14&lt;00:40,  2.36s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1238,7 +1273,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 75%|███████▌  | 48/64 [02:57&lt;01:08,  4.28s/it]
+ 75%|███████▌  | 48/64 [01:16&lt;00:34,  2.16s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1255,7 +1290,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 77%|███████▋  | 49/64 [03:00&lt;01:01,  4.09s/it]
+ 77%|███████▋  | 49/64 [01:18&lt;00:29,  1.96s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1272,7 +1307,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 78%|███████▊  | 50/64 [03:04&lt;00:56,  4.03s/it]
+ 78%|███████▊  | 50/64 [01:19&lt;00:26,  1.89s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1289,7 +1324,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 80%|███████▉  | 51/64 [03:08&lt;00:50,  3.87s/it]
+ 80%|███████▉  | 51/64 [01:21&lt;00:22,  1.69s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1306,7 +1341,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 81%|████████▏ | 52/64 [03:11&lt;00:44,  3.75s/it]
+ 81%|████████▏ | 52/64 [01:21&lt;00:17,  1.47s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1323,7 +1358,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 83%|████████▎ | 53/64 [03:15&lt;00:40,  3.71s/it]
+ 83%|████████▎ | 53/64 [01:23&lt;00:14,  1.35s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1340,7 +1375,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 84%|████████▍ | 54/64 [03:19&lt;00:38,  3.90s/it]
+ 84%|████████▍ | 54/64 [01:25&lt;00:15,  1.58s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1357,7 +1392,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 86%|████████▌ | 55/64 [03:24&lt;00:36,  4.04s/it]
+ 86%|████████▌ | 55/64 [01:27&lt;00:16,  1.80s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1374,7 +1409,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 88%|████████▊ | 56/64 [03:27&lt;00:29,  3.73s/it]
+ 88%|████████▊ | 56/64 [01:28&lt;00:12,  1.55s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1391,7 +1426,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 89%|████████▉ | 57/64 [03:31&lt;00:26,  3.85s/it]
+ 89%|████████▉ | 57/64 [01:30&lt;00:11,  1.65s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1408,7 +1443,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 91%|█████████ | 58/64 [03:34&lt;00:22,  3.70s/it]
+ 91%|█████████ | 58/64 [01:31&lt;00:09,  1.54s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1425,7 +1460,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 92%|█████████▏| 59/64 [03:37&lt;00:17,  3.47s/it]
+ 92%|█████████▏| 59/64 [01:32&lt;00:06,  1.31s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1442,7 +1477,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 94%|█████████▍| 60/64 [03:40&lt;00:13,  3.29s/it]
+ 94%|█████████▍| 60/64 [01:33&lt;00:04,  1.13s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1459,7 +1494,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 95%|█████████▌| 61/64 [03:43&lt;00:09,  3.24s/it]
+ 95%|█████████▌| 61/64 [01:33&lt;00:03,  1.06s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1476,7 +1511,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 97%|█████████▋| 62/64 [03:48&lt;00:07,  3.60s/it]
+ 97%|█████████▋| 62/64 [01:36&lt;00:02,  1.41s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1493,7 +1528,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
- 98%|█████████▊| 63/64 [03:52&lt;00:03,  3.74s/it]
+ 98%|█████████▊| 63/64 [01:38&lt;00:01,  1.59s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1510,7 +1545,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
 <span class="ansi-cyan-fg">[INFO] (sopa.segmentation.shapes)</span> Percentage of non-geometrized cells: 0.00% (usually due to segmentation artefacts)
-100%|██████████| 64/64 [03:55&lt;00:00,  3.69s/it]
+100%|██████████| 64/64 [01:39&lt;00:00,  1.56s/it]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1526,7 +1561,7 @@ save_shapes2zarr(dataset, segmentation_shape_name)
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-100%|██████████| 64/64 [00:00&lt;00:00, 1149.98it/s]
+100%|██████████| 64/64 [00:00&lt;00:00, 1253.46it/s]
 </pre></div></div>
 </div>
 <div class="nboutput docutils container">
@@ -1542,10 +1577,10 @@ len(list_all_cells) 4933
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-Resolving conflicts: 100%|██████████| 9420/9420 [00:00&lt;00:00, 10987.20it/s]
+Resolving conflicts: 100%|██████████| 9422/9422 [00:00&lt;00:00, 10630.06it/s]
 </pre></div></div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
@@ -1553,12 +1588,20 @@ Resolving conflicts: 100%|██████████| 9420/9420 [00:00&lt;00
 Added 3617 cell boundaries in sdata[&#39;rna2seg_test&#39;]
 </pre></div></div>
 </div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
 </section>
 <section id="Step-5:-Visualize-segmentation">
 <h2>Step 5: Visualize segmentation<a class="headerlink" href="#Step-5:-Visualize-segmentation" title="Link to this heading">¶</a></h2>
 <p>Now, we visualize the results. The following code extracts and plots three images: RNA transcripts, a selected staining image, and the corresponding segmentation. Ensure that <code class="docutils literal notranslate"><span class="pre">staining_id</span></code> is valid to avoid indexing errors, and check that <code class="docutils literal notranslate"><span class="pre">bounds</span></code> are within dataset limits.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import matplotlib.pyplot as plt
@@ -1607,7 +1650,7 @@ Get image ...
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-100%|██████████| 58/58 [00:00&lt;00:00, 69.24it/s]
+100%|██████████| 58/58 [00:00&lt;00:00, 74.62it/s]
 Clipping input data to the valid range for imshow with RGB data ([0..1] for floats or [0..255] for integers). Got range [0.0..3.0].
 </pre></div></div>
 </div>

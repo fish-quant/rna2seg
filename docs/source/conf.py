@@ -12,7 +12,7 @@ author = 'Thomas Defard, Alice Blondel'
 release = '0.0.2'
 
 html_logo = '../../img/mini_logo.svg'
-html_static_path = ['_static']
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -44,7 +44,6 @@ autodoc_mock_imports = [
 import sphinx_rtd_theme
 html_theme = 'sphinx_rtd_theme'
 html_theme = 'furo'
-html_static_path = ['_static']
 
 # -- Path setup --------------------------------------------------------------
 # Add the source directory to the sys.path for module imports

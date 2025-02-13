@@ -154,7 +154,7 @@ class RNA2seg(nn.Module):
 
         :param device: The computing device (e.g., "cpu" or "cuda").
         :type device: str
-        :param pretrained_model: Path to a pretrained model. Defaults to None.
+        :param pretrained_model: Path to a pretrained model. If None, the trained rna2seg model is download from huggingface. Defaults to None.
         :type pretrained_model: Path | str | None
         :param net: Backbone network architecture. Can be "unet" or "vmunet". Defaults to "unet".
         :type net: str
@@ -266,6 +266,7 @@ class RNA2seg(nn.Module):
 
         dapi = dapi.to(self.device)
         img_cellbound = img_cellbound.to(self.device)
+        rna_img = rna_img.to(self.device)
         assert list_gene is not None or rna_img is not None, "list_gene or rna_img must be provided"
         assert list_gene is None or rna_img is None, "list_gene to encode rna and rna_img using pre-encoded RNA cannot be provided at the same time"
 
@@ -488,7 +489,12 @@ class RNA2seg(nn.Module):
         self.net = AdaptorNetWrapper(model, out_channels=self.n_inv_chan)
 
         self.net = self.net.to(self.device)
-        if self.pretrained_model:
-            assert  os.path.exists(self.pretrained_model), f"Pretrained model not found at : {self.pretrained_model}"
-            print(f"Loading weights from {self.pretrained_model}")
-            self.load_model(self.pretrained_model, device=self.device)
+        if self.pretrained_model is None:
+
+            from huggingface_hub import snapshot_download
+            path = snapshot_download(repo_id="aliceblondel/RNA2seg")
+            self.pretrained_model = Path(path) / "rna2seg.pt"
+
+        assert  os.path.exists(self.pretrained_model), f"Pretrained model not found at : {self.pretrained_model}"
+        print(f"Loading weights from {self.pretrained_model}")
+        self.load_model(self.pretrained_model, device=self.device)

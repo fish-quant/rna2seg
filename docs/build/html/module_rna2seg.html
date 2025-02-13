@@ -407,7 +407,7 @@ spatial transcriptomics data and membrane and nuclei stainings.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>device</strong> (<em>str</em>) – The computing device (e.g., “cpu” or “cuda”).</p></li>
-<li><p><strong>pretrained_model</strong> (<em>Path</em><em> | </em><em>str</em><em> | </em><em>None</em>) – Path to a pretrained model. Defaults to None.</p></li>
+<li><p><strong>pretrained_model</strong> (<em>Path</em><em> | </em><em>str</em><em> | </em><em>None</em>) – Path to a pretrained model. If None, the trained rna2seg model is download from huggingface. Defaults to None.</p></li>
 <li><p><strong>net</strong> (<em>str</em>) – Backbone network architecture. Can be “unet” or “vmunet”. Defaults to “unet”.</p></li>
 <li><p><strong>n_inv_chan</strong> (<em>int</em>) – Number of channels in staining input image. The stainings are combined and encoded into an image of n_inv_chan channels using a Channel-Net. Defaults to 3.</p></li>
 <li><p><strong>nb_rna_channel</strong> (<em>int</em>) – Number of RNA channels used as input. Defaults to 1.</p></li>
