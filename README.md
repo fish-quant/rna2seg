@@ -23,9 +23,24 @@ RNA2seg is designed for researchers working with spatial transcriptomics data wh
 
 ## Documentation
 
-Check RNA2seg's [documentation]() to get started. It contains installation explanations and tutorials.
+Check RNA2seg's [documentation](https://rna2seg.readthedocs.io/en/latest/) to get started. It contains installation explanations and tutorials.
 
 ## Installation
+
+It is recommended to create a virtual environment before installing RNA2seg to isolate dependencies:  
+
+```
+$ python -m venv rna2seg-env  
+$ source rna2seg-env/bin/activate 
+```
+Then, install RNA2seg and its dependencies:  
+
+```
+(rna2seg-env) $ pip install rna2seg  
+(rna2seg-env) $ pip install -r requirements.txt  
+```
+
+RNA2seg is now installed and ready to use. 🚀
 
 ## Features
 
