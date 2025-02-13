@@ -9,7 +9,10 @@
 project = 'RNA2seg'
 copyright = '2025, Thomas Defard, Alice Blondel'
 author = 'Thomas Defard, Alice Blondel'
-release = '0.0.1'
+release = '0.0.2'
+
+html_logo = '../../img/mini_logo.svg'
+html_static_path = ['_static']
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

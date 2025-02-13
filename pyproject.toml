@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rna2seg"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Thomas Defard", email="thomas.defard@minesparis.psl.eu" },
   {name = "Alice Blondel", email="alice.blondel@minesparis.psl.eu"}
