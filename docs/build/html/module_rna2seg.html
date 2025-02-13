@@ -253,38 +253,140 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rna2seg.dataset_zarr.</span></span><span class="sig-name descname"><span class="pre">RNA2segDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNA2segDataset" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></p>
 <dl class="py method">
+<dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNA2segDataset.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNA2segDataset.__getitem__" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieves a patch of spatial transcriptomics data based on the given index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>idx</strong> (<em>int</em>) – The index of the patch to retrieve.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>A dictionary containing the following elements:</p>
+<ul class="simple">
+<li><p>”img_cellbound”: Tensor representing the cell boundary image.</p></li>
+<li><p>”dapi”: Tensor representing the DAPI-stained image for nuclear staining.</p></li>
+<li><p>”rna_img”: Tensor representing the spatial RNA expression image.</p></li>
+<li><p>”mask_flow”: Tensor representing the cellular flow field mask for segmentation.</p></li>
+<li><p>”mask_gradient”: Tensor representing the gradient mask for segmentation refinement.</p></li>
+<li><p>”background” (optional): Tensor representing the background image if <cite>test_return_background</cite> is enabled.</p></li>
+<li><p>”idx”: Integer index of the patch.</p></li>
+<li><p>”patch_index”: Integer representing the patch identifier.</p></li>
+<li><p>”bounds”: List defining the spatial boundaries of the patch.</p></li>
+<li><p>”segmentation_nuclei” (optional): Tensor representing the nuclear segmentation mask if available.</p></li>
+<li><p>”list_gene” (optional): Tensor containing the list of detected genes if <cite>return_df</cite> is enabled.</p></li>
+<li><p>”array_coord” (optional): Tensor containing spatial coordinates of detected transcripts if <cite>return_df</cite> is enabled.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNA2segDataset.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sdata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">spatialdata.SpatialData</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels_dapi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels_cellbound</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_cell_consistent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_nucleus_consistent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_nuclei_segmentation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_gene_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_overlap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list_patch_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list_annotation_patches</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gene_column</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gene'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size_background_density</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size_rna2img</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_filter_size_rna2img</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_resize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">albumentations.Compose</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform_dapi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">albumentations.Compose</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">augment_rna_density</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_nb_cell_per_patch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_cell_in_background_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_nucleus_seg_from_bg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addition_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_transcripts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gene2index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">augmentation_img</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recompute_flow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_return_background</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patch_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experiment_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'input_target_rna2seg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape_patch_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNA2segDataset.__init__" title="Link to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Initializes the dataset with the provided parameters.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>st_segmentation</strong></p></li>
-<li><p><strong>dict_gene_value</strong></p></li>
-<li><p><strong>kernel_size_background_density</strong> – # should be the same as the one used to compute density_threshold</p></li>
-<li><p><strong>kernel_size_rna2img</strong> – gaussian kernel size to apply on the rna image</p></li>
-<li><p><strong>max_filter_size_rna2img</strong> – max filter size to apply on the rna image, if downsampling is applied a max filter should be applied to in order to avoid aliasing</p></li>
-<li><p><strong>transform_resize</strong> – transform_resize for the rna and dapi image</p></li>
-<li><p><strong>transform_dapi</strong> – transform apply only one dapi image</p></li>
-<li><p><strong>return_agg_segmentation</strong></p></li>
-<li><p><strong>evaluation_mode</strong></p></li>
-<li><p><strong>min_nb_cell_per_patch</strong></p></li>
-<li><p><strong>return_flow</strong></p></li>
-<li><p><strong>test_return_background</strong></p></li>
-<li><p><strong>return_df</strong></p></li>
-<li><p><strong>nb_channel_rna</strong></p></li>
-<li><p><strong>gene2index</strong></p></li>
-<li><p><strong>remove_cell_in_background_threshold</strong> – maximum % of the cell in background to be accepted and taken into account during the backpropagation</p></li>
-<li><p><strong>remove_nucleus_seg_from_bg</strong></p></li>
-<li><p><strong>addition_mode</strong> – if True the rna spots value are added to the image instead of replacing the 0 value or other RNA value</p></li>
+<li><p><strong>sdata</strong> – SpatialData object containing spatial transcriptomics data.</p></li>
+<li><p><strong>channels_dapi</strong> – List of DAPI channels for nuclear staining.</p></li>
+<li><p><strong>channels_cellbound</strong> – List of cell boundary channels, or None if not provided.</p></li>
+<li><p><strong>key_cell_consistent</strong> – Key for consistent cell segmentation, or None.</p></li>
+<li><p><strong>key_nucleus_consistent</strong> – Key for consistent nucleus segmentation, or None.</p></li>
+<li><p><strong>key_nuclei_segmentation</strong> – Key for nuclei segmentation, or None.</p></li>
+<li><p><strong>dict_gene_value</strong> – Dictionary containing gene encodings, or None.</p></li>
+<li><p><strong>training_mode</strong> – Boolean flag to enable training mode.</p></li>
+<li><p><strong>evaluation_mode</strong> – Boolean flag to enable evaluation mode.</p></li>
+<li><p><strong>patch_width</strong> – Width of the patch for segmentation, or None.</p></li>
+<li><p><strong>patch_overlap</strong> – Overlap of the patch for segmentation, or None.</p></li>
+<li><p><strong>list_patch_index</strong> – List of patch indices, or None.</p></li>
+<li><p><strong>list_annotation_patches</strong> – List of annotation patches to exclude, or None.</p></li>
+<li><p><strong>gene_column</strong> – Column name for genes, default is “gene”.</p></li>
+<li><p><strong>density_threshold</strong> – Threshold for density calculation, or None.</p></li>
+<li><p><strong>kernel_size_background_density</strong> – Kernel size for background density calculation, default is 5.</p></li>
+<li><p><strong>kernel_size_rna2img</strong> – Gaussian kernel size for RNA image transformation, default is 0.5.</p></li>
+<li><p><strong>max_filter_size_rna2img</strong> – Max filter size for RNA image transformation, default is 2.</p></li>
+<li><p><strong>transform_resize</strong> – Resize transformation function for images, or None.</p></li>
+<li><p><strong>transform_dapi</strong> – Transformation function for DAPI images, or None.</p></li>
+<li><p><strong>augment_rna_density</strong> – Boolean flag to enable RNA density augmentation.</p></li>
+<li><p><strong>min_nb_cell_per_patch</strong> – Minimum number of cells per patch for inclusion.</p></li>
+<li><p><strong>remove_cell_in_background_threshold</strong> – Threshold for removing cells in the background.</p></li>
+<li><p><strong>remove_nucleus_seg_from_bg</strong> – Boolean flag to remove nucleus segmentation from the background.</p></li>
+<li><p><strong>addition_mode</strong> – Boolean flag to enable RNA spot value addition.</p></li>
+<li><p><strong>return_df</strong> – Boolean flag to return DataFrame, default is False.</p></li>
+<li><p><strong>gene2index</strong> – Dictionary mapping genes to indices, or None if <cite>return_df</cite> is False.</p></li>
+<li><p><strong>augmentation_img</strong> – Boolean flag to enable image augmentation.</p></li>
+<li><p><strong>recompute_flow</strong> – Boolean flag to recompute the flow field.</p></li>
+<li><p><strong>test_return_background</strong> – Boolean flag to return background image for testing.</p></li>
+<li><p><strong>patch_dir</strong> – Directory for patch storage, or None.</p></li>
+<li><p><strong>experiment_name</strong> – Name of the experiment, default is ‘input_target_rna2seg’.</p></li>
+<li><p><strong>use_cache</strong> – Boolean flag to enable cache usage.</p></li>
+<li><p><strong>shape_patch_key</strong> – Key for patch shape, or None.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNA2segDataset.set_threshold">
-<span class="sig-name descname"><span class="pre">set_threshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_nb_crops</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percentile_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1200,</span> <span class="pre">1200)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNA2segDataset.set_threshold" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNA2segDataset.get_rna_img">
+<span class="sig-name descname"><span class="pre">get_rna_img</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_transcripts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'transcripts'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dict_gene_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNA2segDataset.get_rna_img" title="Link to this definition">¶</a></dt>
+<dd><p>Generates an image of RNA from spatial transcriptomics data within the specified bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bounds</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>]</em>) – The bounding box coordinates for the extracted region (xmin, ymin, xmax, ymax).</p></li>
+<li><p><strong>key_transcripts</strong> (<em>str</em>) – The key to access transcriptomic data in the dataset. Defaults to “transcripts”.</p></li>
+<li><p><strong>dict_gene_value</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>float</em><em>] </em><em>| </em><em>None</em>) – Dictionary mapping gene names to encodings/colors. If None, all genes have a value of 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An image representation of RNA expression in the selected region.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNA2segDataset.get_segmentation_img">
+<span class="sig-name descname"><span class="pre">get_segmentation_img</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_cell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'red'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNA2segDataset.get_segmentation_img" title="Link to this definition">¶</a></dt>
+<dd><p>Generates an image of cell segmentation within the specified bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bounds</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>]</em>) – The bounding box coordinates for the extracted region (xmin, ymin, xmax, ymax).</p></li>
+<li><p><strong>key_cell</strong> (<em>str</em>) – The key to access cell segmentation data.</p></li>
+<li><p><strong>image</strong> (<em>np.ndarray</em><em> | </em><em>None</em>) – The base image on which segmentation will be overlaid. If None, uses DAPI staining.</p></li>
+<li><p><strong>color</strong> (<em>str</em>) – The color used to outline cell contours. Defaults to “red”.</p></li>
+<li><p><strong>size_line</strong> (<em>int</em>) – The thickness of the segmentation contour lines. Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An image with cell segmentation overlaid.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="rna2seg.dataset_zarr.RNA2segDataset.get_staining_img">
+<span class="sig-name descname"><span class="pre">get_staining_img</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rna2seg.dataset_zarr.RNA2segDataset.get_staining_img" title="Link to this definition">¶</a></dt>
+<dd><p>Generates an image of dapi and cell boundaries stainings within the specified bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bounds</strong> (<em>tuple</em><em>[</em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>, </em><em>int</em><em>]</em>) – The bounding box coordinates for the extracted region (xmin, ymin, xmax, ymax).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An image of the different staining (channels_dapi and channels_cellbound) in the selected region.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 
@@ -519,8 +621,11 @@ Save the patches shapes into the zarr and precomputes transcript.csv files for e
             <ul>
 <li><a class="reference internal" href="#">Modules</a><ul>
 <li><a class="reference internal" href="#rna2seg.dataset_zarr.RNA2segDataset"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset</span></code></a><ul>
+<li><a class="reference internal" href="#rna2seg.dataset_zarr.RNA2segDataset.__getitem__"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.__getitem__()</span></code></a></li>
 <li><a class="reference internal" href="#rna2seg.dataset_zarr.RNA2segDataset.__init__"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#rna2seg.dataset_zarr.RNA2segDataset.set_threshold"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.set_threshold()</span></code></a></li>
+<li><a class="reference internal" href="#rna2seg.dataset_zarr.RNA2segDataset.get_rna_img"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.get_rna_img()</span></code></a></li>
+<li><a class="reference internal" href="#rna2seg.dataset_zarr.RNA2segDataset.get_segmentation_img"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.get_segmentation_img()</span></code></a></li>
+<li><a class="reference internal" href="#rna2seg.dataset_zarr.RNA2segDataset.get_staining_img"><code class="docutils literal notranslate"><span class="pre">RNA2segDataset.get_staining_img()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#rna2seg.models.RNA2seg"><code class="docutils literal notranslate"><span class="pre">RNA2seg</span></code></a><ul>

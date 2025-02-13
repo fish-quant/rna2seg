@@ -15,10 +15,13 @@ import albumentations as A
 from typing import Optional
 from scipy import ndimage as ndi
 from torch.utils.data import Dataset
+from sopa._sdata import to_intrinsic
+from matplotlib import colors as mcolors
 from cellpose import transforms as tf_cp
 from albumentations.core.transforms_interface import ImageOnlyTransform
 
 from rna2seg._constant import RNA2segFiles
+from rna2seg.utils import create_cell_contours
 from rna2seg.dataset_zarr import StainingTranscriptSegmentation
 from rna2seg.dataset_zarr.background import get_background_mask
 from rna2seg.dataset_zarr.data_augmentation import random_rotate_and_resize, cellbound_transform
@@ -66,8 +69,6 @@ def pad_image3D_to_shape(image, target_shape=(1200, 1200)):
         new_image[i] = pad_image2D_to_shape(image[i], target_shape=target_shape)
     return new_image
 
-
-
 def pad_image2D_to_shape(image, target_shape=(1200, 1200)):
     """
     Pad the input image with zeros to match the target shape.
@@ -87,7 +88,6 @@ def pad_image2D_to_shape(image, target_shape=(1200, 1200)):
     padded_image = np.pad(image, padding, mode='constant', constant_values=0)
     return padded_image
 
-
 class MaxFilter(ImageOnlyTransform):
     def __init__(self, max_filter_size=0, always_apply=False, p=1.0):
         super(MaxFilter, self).__init__(always_apply, p)
@@ -97,10 +97,6 @@ class MaxFilter(ImageOnlyTransform):
         if self.max_filter_size > 0:
             img = ndi.maximum_filter(img, size=(self.max_filter_size, self.max_filter_size, 1))
         return img
-
-
-
-
 
 def compute_array_coord(bounds,
                         patch_df,
@@ -127,6 +123,7 @@ def compute_array_coord(bounds,
     array_coord = (array_coord * scaling_factor_coord).astype(int)
     return array_coord
 
+
 def rna2img(df_crop, dict_gene_value: dict | None,
             image_shape=(1200, 1200, 3),
             gene_column="genes",
@@ -148,7 +145,6 @@ def rna2img(df_crop, dict_gene_value: dict | None,
         column_y: column name of the y coordinate
     Returns:
     """
-
 
     df_crop = df_crop.copy()
     df_crop[column_y] = df_crop[column_y].astype(int) - offset_y
@@ -180,16 +176,12 @@ def rna2img(df_crop, dict_gene_value: dict | None,
                 img[y, x] += list_coord_value[i]
 
     ## add max filter with scipy
-
     if max_filter_size > 0:
         img = ndi.maximum_filter(img, size=(max_filter_size, max_filter_size, 1))
 
     if gaussian_kernel_size > 0: # it would be more optimise to apply it after resizing/downsampling
         img = ndi.gaussian_filter(img, sigma=(gaussian_kernel_size, gaussian_kernel_size, 0))
     return img
-
-
-
 
 
 def remove_cell_in_background(agreement_segmentation,
@@ -299,12 +291,9 @@ class RNA2segDataset(Dataset):
                  channels_dapi : list[str], # should be just STR
                  channels_cellbound : list[str] | None=None,
 
-
-
                  key_cell_consistent : str | None = None,
                  key_nucleus_consistent : str | None = None,
                  key_nuclei_segmentation : str | None = None, # use to compute background
-
 
                  dict_gene_value: dict | None = None,
 
@@ -359,28 +348,43 @@ class RNA2segDataset(Dataset):
 
                  ):
 
-        #if train_mode = True:
-        #    augmentation_img = False
-
         """
-        :param st_segmentation:
-        :param dict_gene_value:
-        :param kernel_size_background_density: # should be the same as the one used to compute density_threshold
-        :param kernel_size_rna2img: gaussian kernel size to apply on the rna image
-        :param max_filter_size_rna2img: max filter size to apply on the rna image, if downsampling is applied a max filter should be applied to in order to avoid aliasing
-        :param transform_resize:  transform_resize for the rna and dapi image
-        :param transform_dapi:  transform apply only one dapi image
-        :param return_agg_segmentation:
-        :param evaluation_mode:
-        :param min_nb_cell_per_patch:
-        :param return_flow:
-        :param test_return_background:
-        :param return_df:
-        :param nb_channel_rna:
-        :param gene2index:
-        :param remove_cell_in_background_threshold: maximum % of the cell in background to be accepted and taken into account during the backpropagation
-        :param remove_nucleus_seg_from_bg:
-        :param addition_mode: if True the rna spots value are added to the image instead of replacing the 0 value or other RNA value
+        Initializes the dataset with the provided parameters.
+
+        :param sdata: SpatialData object containing spatial transcriptomics data.
+        :param channels_dapi: List of DAPI channels for nuclear staining.
+        :param channels_cellbound: List of cell boundary channels, or None if not provided.
+        :param key_cell_consistent: Key for consistent cell segmentation, or None.
+        :param key_nucleus_consistent: Key for consistent nucleus segmentation, or None.
+        :param key_nuclei_segmentation: Key for nuclei segmentation, or None.
+        :param dict_gene_value: Dictionary containing gene encodings, or None.
+        :param training_mode: Boolean flag to enable training mode.
+        :param evaluation_mode: Boolean flag to enable evaluation mode.
+        :param patch_width: Width of the patch for segmentation, or None.
+        :param patch_overlap: Overlap of the patch for segmentation, or None.
+        :param list_patch_index: List of patch indices, or None.
+        :param list_annotation_patches: List of annotation patches to exclude, or None.
+        :param gene_column: Column name for genes, default is "gene".
+        :param density_threshold: Threshold for density calculation, or None.
+        :param kernel_size_background_density: Kernel size for background density calculation, default is 5.
+        :param kernel_size_rna2img: Gaussian kernel size for RNA image transformation, default is 0.5.
+        :param max_filter_size_rna2img: Max filter size for RNA image transformation, default is 2.
+        :param transform_resize: Resize transformation function for images, or None.
+        :param transform_dapi: Transformation function for DAPI images, or None.
+        :param augment_rna_density: Boolean flag to enable RNA density augmentation.
+        :param min_nb_cell_per_patch: Minimum number of cells per patch for inclusion.
+        :param remove_cell_in_background_threshold: Threshold for removing cells in the background.
+        :param remove_nucleus_seg_from_bg: Boolean flag to remove nucleus segmentation from the background.
+        :param addition_mode: Boolean flag to enable RNA spot value addition.
+        :param return_df: Boolean flag to return DataFrame, default is False.
+        :param gene2index: Dictionary mapping genes to indices, or None if `return_df` is False.
+        :param augmentation_img: Boolean flag to enable image augmentation.
+        :param recompute_flow: Boolean flag to recompute the flow field.
+        :param test_return_background: Boolean flag to return background image for testing.
+        :param patch_dir: Directory for patch storage, or None.
+        :param experiment_name: Name of the experiment, default is 'input_target_rna2seg'.
+        :param use_cache: Boolean flag to enable cache usage.
+        :param shape_patch_key: Key for patch shape, or None.
         """
 
 
@@ -522,7 +526,7 @@ class RNA2segDataset(Dataset):
             if patch_width is None:
                 import re
                 patch_width = re.search(r"sopa_patches_rna2seg_(\d+)_", shape_patch_key)
-            self.set_threshold(
+            self._set_threshold(
                 max_nb_crops=500,
                 kernel_size = 9,
                 percentile_threshold = 5,
@@ -533,21 +537,25 @@ class RNA2segDataset(Dataset):
         return  len(self.list_patch_index)
 
     def __getitem__(self, idx):
-
-
         """
-            Args:
-            idx:
+        Retrieves a patch of spatial transcriptomics data based on the given index.
 
-        Returns:
+        :param idx: The index of the patch to retrieve.
+        :type idx: int
+        :return: A dictionary containing the following elements:
 
-        """
-        """
-        Args:
-            idx: 
-
-        Returns:
-
+            - "img_cellbound": Tensor representing the cell boundary image.
+            - "dapi": Tensor representing the DAPI-stained image for nuclear staining.
+            - "rna_img": Tensor representing the spatial RNA expression image.
+            - "mask_flow": Tensor representing the cellular flow field mask for segmentation.
+            - "mask_gradient": Tensor representing the gradient mask for segmentation refinement.
+            - "background" (optional): Tensor representing the background image if `test_return_background` is enabled.
+            - "idx": Integer index of the patch.
+            - "patch_index": Integer representing the patch identifier.
+            - "bounds": List defining the spatial boundaries of the patch.
+            - "segmentation_nuclei" (optional): Tensor representing the nuclear segmentation mask if available.
+            - "list_gene" (optional): Tensor containing the list of detected genes if `return_df` is enabled.
+            - "array_coord" (optional): Tensor containing spatial coordinates of detected transcripts if `return_df` is enabled.
         """
 
         patch_index = self.list_patch_index[idx]
@@ -606,7 +614,6 @@ class RNA2segDataset(Dataset):
             )
 
 
-
         ############### data augmentation ###################################
 
         if self.augmentation_img:
@@ -623,6 +630,8 @@ class RNA2segDataset(Dataset):
                 background=background if self.test_return_background else None
             )
 
+        ############### create dict_result ###################################
+
         dict_result = {}
         dict_result["img_cellbound"] = torch.tensor(img_cellbound)
         dict_result["dapi"] = torch.tensor(dapi).clone().detach()
@@ -630,8 +639,6 @@ class RNA2segDataset(Dataset):
 
         dict_result["mask_flow"] = torch.tensor(mask_flow.astype(np.float32))
         dict_result["mask_gradient"] = torch.tensor(mask_gradient.astype(np.float32))
-
-
 
         if self.test_return_background:
             transformed_background = self.transform_resize(image=background)
@@ -648,7 +655,6 @@ class RNA2segDataset(Dataset):
             dict_result["array_coord"] = torch.tensor(array_coord)
 
         return dict_result
-
 
     def _get_patch_input(self, patch_index, folder_to_save):
 
@@ -751,7 +757,7 @@ class RNA2segDataset(Dataset):
         img_input = np.concatenate([dapi[:,:, None], rna], axis=2).astype(np.float32)
 
         if self.return_flow:
-            assert self.st_segmentation.density_threshold is not None, "density threshold should be provided or set with self.set_threshold() "
+            assert self.st_segmentation.density_threshold is not None, "density threshold should be provided or set with self._set_threshold() "
             background = get_background_mask(density_threshold= self.st_segmentation.density_threshold,
                                              df_crop = patch_df,
                                              shape = dapi.shape,
@@ -865,7 +871,6 @@ class RNA2segDataset(Dataset):
 
         return dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background, list_gene, array_coord, segmentation_nuclei, bounds
 
-
     def _augment_input(self,
                        dapi,
                        rna_img,
@@ -950,9 +955,7 @@ class RNA2segDataset(Dataset):
             mask_gradient = transformed_input_image[n_dapi+n_rna_img+ncb]
         return dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background
 
-
-
-    def set_threshold(self, max_nb_crops=2000,
+    def _set_threshold(self, max_nb_crops=2000,
                       kernel_size = 9,
                       percentile_threshold = 5,
                       shape=(1200, 1200),):
@@ -977,7 +980,6 @@ class RNA2segDataset(Dataset):
         print(f"Time to compute density threshold: {time() - t:.6f}s")
 
         self.st_segmentation.density_threshold = density_threshold
-
 
     def _set_valid_indices(self):
 
@@ -1014,17 +1016,106 @@ class RNA2segDataset(Dataset):
             if patch_df.empty:
                 continue
 
+    def get_rna_img(
+            self, 
+            bounds, 
+            key_transcripts="transcripts", 
+            dict_gene_value=None,
+        ):
+        """
+        Generates an image of RNA from spatial transcriptomics data within the specified bounds.
+
+        :param bounds: The bounding box coordinates for the extracted region (xmin, ymin, xmax, ymax).
+        :type bounds: tuple[int, int, int, int]
+        :param key_transcripts: The key to access transcriptomic data in the dataset. Defaults to "transcripts".
+        :type key_transcripts: str
+        :param dict_gene_value: Dictionary mapping gene names to encodings/colors. If None, all genes have a value of 1.
+        :type dict_gene_value: dict[str, float] | None
+        :return: An image representation of RNA expression in the selected region.
+        :rtype: np.ndarray
+        """
+        print("Get RNA image ...")
+        sdata = self.st_segmentation.sdata
+        df = sdata[key_transcripts]
+        img = sdata[self.st_segmentation.image_key]
+        df = to_intrinsic(sdata, df, img)
+        patch_df = df[
+            (df["x"] >= bounds[0]) & (df["x"] <= bounds[2]) &
+            (df["y"] >= bounds[1]) & (df["y"] <= bounds[3])
+        ]
+        patch_df = patch_df.compute()
+        if dict_gene_value is None:
+            dict_gene_value = self.dict_gene_value
+
+        img = rna2img(
+            patch_df, 
+            dict_gene_value=dict_gene_value,  
+            image_shape=(bounds[3]-bounds[1], bounds[2]-bounds[0], 3),
+            offset_x=bounds[0], offset_y=bounds[1], gene_column="gene", 
+            max_filter_size=5,
+            addition_mode=True
+        )
+        return img
+    
+    def get_staining_img(self, bounds):
+        """
+        Generates an image of dapi and cell boundaries stainings within the specified bounds. 
+
+        :param bounds: The bounding box coordinates for the extracted region (xmin, ymin, xmax, ymax).
+        :type bounds: tuple[int, int, int, int]
+        :return: An image of the different staining (channels_dapi and channels_cellbound) in the selected region.
+        :rtype: np.ndarray
+        """
+        print("Get image ...")
+        xmin, ymin, xmax, ymax = bounds
+        st_segmentation = self.st_segmentation
+        stainings = [*st_segmentation.channels_dapi, *st_segmentation.channels_cellbound]
+        image = st_segmentation.image.sel(
+            c=stainings,
+            x=slice(xmin, xmax),
+            y=slice(ymin, ymax),
+        ).values
+        return image
+
+    def get_segmentation_img(self, bounds, key_cell, image=None, color="red", size_line=5,):
+        """
+        Generates an image of cell segmentation within the specified bounds.
+
+        :param bounds: The bounding box coordinates for the extracted region (xmin, ymin, xmax, ymax).
+        :type bounds: tuple[int, int, int, int]
+        :param key_cell: The key to access cell segmentation data.
+        :type key_cell: str
+        :param image: The base image on which segmentation will be overlaid. If None, uses DAPI staining.
+        :type image: np.ndarray | None
+        :param color: The color used to outline cell contours. Defaults to "red".
+        :type color: str
+        :param size_line: The thickness of the segmentation contour lines. Defaults to 5.
+        :type size_line: int
+        :return: An image with cell segmentation overlaid.
+        :rtype: np.ndarray
+        """
+        print("Get segmentation image ...")
+
+        # Define image on which to plot the segmentation (dapi or cb)
+        if image is None:
+            image = self.get_staining_img(bounds)[0]  # Dapi staining if image is None
+        image_with_mask=image/image.max()
+        if image_with_mask.ndim == 2:
+            image_with_mask = np.stack([image_with_mask] * 3, axis=-1)
+
+        # Get segmentation
+        segmentation =  self.st_segmentation.get_segmentation_crop(
+            bounds = bounds, shape = image_with_mask.shape[0:2], key_cell= key_cell)
+        cell_contour_mask = create_cell_contours(segmentation, size_line = size_line)
+        
+        image_with_mask[cell_contour_mask > 0] = mcolors.hex2color(color)
+
+        return image_with_mask
+    
 def custom_collate_fn(batch):
     batched_data = {}
     # Assuming all dictionaries have the same structure
     keys = batch[0].keys()
-
-    # Print the batch to inspect its structure
-    #print("Batch:", batch)
-
-    # Check the shape of each item in the batch
-    #for i, item in enumerate(batch):
-    #    print(f"Item {i} shape:", np.shape(item))
 
     max_cb_channel = 4
     for key in keys:

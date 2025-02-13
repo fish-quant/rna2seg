@@ -1,10 +1,28 @@
+import numpy as np
 from tqdm import tqdm
 from pathlib import Path
 import geopandas as gpd
+from scipy import ndimage as ndi
 from sopa.segmentation import shapes
 from spatialdata import SpatialData
 from spatialdata._io import write_shapes
 from spatialdata.models import ShapesModel
+
+def create_cell_contours(seg_mask, size_line = 5, min_size= 2500): 
+    
+    contour_mask = np.zeros(seg_mask.shape)
+    cell_to_contour = np.unique(seg_mask)
+
+    nb_cell_in = 0
+    for cell in tqdm(cell_to_contour):
+        mask = (seg_mask == cell).astype(int)
+        if cell == 0 or mask.sum()<min_size:
+            continue
+        nb_cell_in += 1
+        contour_mask += (ndi.maximum_filter(mask, size=size_line) - ndi.minimum_filter(mask, size=size_line))
+    
+    return contour_mask
+
 
 
 # fonction from sopa 1.0.14
