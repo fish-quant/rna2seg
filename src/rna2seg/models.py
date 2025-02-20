@@ -493,9 +493,9 @@ class RNA2seg(nn.Module):
         if self.pretrained_model == "default_pretrained":
 
             from huggingface_hub import snapshot_download
+            print("Downloading pretrained model from huggingface")
             path = snapshot_download(repo_id="aliceblondel/RNA2seg")
             self.pretrained_model = Path(path) / "rna2seg.pt"
-            return
 
         if self.pretrained_model is not None:
             assert  os.path.exists(self.pretrained_model), f"Pretrained model not found at : {self.pretrained_model}"
