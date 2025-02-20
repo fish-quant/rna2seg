@@ -16,6 +16,5 @@ Then, install RNA2seg and its dependencies:
    (rna2seg-env) $ pip install instanseg-torch==0.0.5
    (rna2seg-env) $ pip install rna2seg
 
-
-
+You might need to manually install the pytorch compatible with your system. ( https://pytorch.org/get-started )
 RNA2seg is now installed and ready to use. 🚀
