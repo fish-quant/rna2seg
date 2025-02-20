@@ -135,7 +135,7 @@ class RNA2seg(nn.Module):
     def __init__(
             self,
             device,
-            pretrained_model: Path | str | None=None,
+            pretrained_model: Path | str | None="default_pretrained",
             net : str="unet",
             n_inv_chan: int=3,
             nb_rna_channel: int=1,
@@ -154,7 +154,8 @@ class RNA2seg(nn.Module):
 
         :param device: The computing device (e.g., "cpu" or "cuda").
         :type device: str
-        :param pretrained_model: Path to a pretrained model. If None, the trained rna2seg model is download from huggingface. Defaults to None.
+        :param pretrained_model: Path to a pretrained model.
+        If "default_pretrained", a trained rna2seg model is download from huggingface. If None weight are randomly initialized,  Defaults is "default_pretrained".
         :type pretrained_model: Path | str | None
         :param net: Backbone network architecture. Can be "unet" or "vmunet". Defaults to "unet".
         :type net: str
@@ -438,7 +439,7 @@ class RNA2seg(nn.Module):
         cells = shapes.geometrize(masks_pred, tolerance = None, smooth_radius_ratio = 0.1)
         print(f'{len(cells)} cells detected')
         cells = cells[cells.area >= self.min_area] if min_area > 0 else cells
-        cells = gpd.GeoDataFrame(geometry=cells)
+        cells = gpd.GeoDataFrame(geometry=cells.geometry)
         cells.geometry = cells.translate(*input_dict['bounds'][:2])
 
         # Save the cells as parquet
@@ -489,12 +490,14 @@ class RNA2seg(nn.Module):
         self.net = AdaptorNetWrapper(model, out_channels=self.n_inv_chan)
 
         self.net = self.net.to(self.device)
-        if self.pretrained_model is None:
+        if self.pretrained_model == "default_pretrained":
 
             from huggingface_hub import snapshot_download
             path = snapshot_download(repo_id="aliceblondel/RNA2seg")
             self.pretrained_model = Path(path) / "rna2seg.pt"
+            return
 
-        assert  os.path.exists(self.pretrained_model), f"Pretrained model not found at : {self.pretrained_model}"
-        print(f"Loading weights from {self.pretrained_model}")
-        self.load_model(self.pretrained_model, device=self.device)
+        if self.pretrained_model is not None:
+            assert  os.path.exists(self.pretrained_model), f"Pretrained model not found at : {self.pretrained_model}"
+            print(f"Loading weights from {self.pretrained_model}")
+            self.load_model(self.pretrained_model, device=self.device)

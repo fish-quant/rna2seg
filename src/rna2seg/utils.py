@@ -3,10 +3,10 @@ from tqdm import tqdm
 from pathlib import Path
 import geopandas as gpd
 from scipy import ndimage as ndi
-from sopa.segmentation import shapes
 from spatialdata import SpatialData
 from spatialdata._io import write_shapes
 from spatialdata.models import ShapesModel
+from sopa.segmentation.resolve import solve_conflicts
 
 def create_cell_contours(seg_mask, size_line = 5, min_size= 2500): 
     
@@ -53,7 +53,7 @@ def load_segmentation2zarr(path_parquet_files):
 def save_shapes2zarr(dataset, segmentation_key):
     list_all_cells = load_segmentation2zarr(path_parquet_files=dataset.patch_dir)
     print(f"len(list_all_cells) {len(list_all_cells)}")
-    unique_cells = shapes.solve_conflicts(
+    unique_cells = solve_conflicts(
         cells = list_all_cells,
         threshold = 0.25,
         patch_indices = None,
@@ -61,10 +61,10 @@ def save_shapes2zarr(dataset, segmentation_key):
     )
 
     sdata = dataset.st_segmentation.sdata
-    geo_df = gpd.GeoDataFrame({"geometry": unique_cells})
+    geo_df = gpd.GeoDataFrame({"geometry": unique_cells.geometry})
     geo_df = ShapesModel.parse(geo_df)
 
-    segmentation_key = f"rna2seg_{segmentation_key}"
+    #segmentation_key = f"rna2seg_{segmentation_key}"
     sdata[segmentation_key] = geo_df
     sdata.write_element(segmentation_key)
 

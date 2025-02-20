@@ -7,14 +7,15 @@ It is recommended to create a virtual environment before installing RNA2seg to i
 
 .. code-block:: console  
 
-   $ python -m venv rna2seg-env  
-   $ source rna2seg-env/bin/activate 
+   $ conda create --name rna2seg-env python=3.10
 
 Then, install RNA2seg and its dependencies:  
 
 .. code-block:: console  
 
-   (rna2seg-env) $ pip install rna2seg  
-   (rna2seg-env) $ pip install -r requirements.txt  
+   (rna2seg-env) $ pip install instanseg-torch==0.0.5
+   (rna2seg-env) $ pip install rna2seg
+
+
 
 RNA2seg is now installed and ready to use. 🚀

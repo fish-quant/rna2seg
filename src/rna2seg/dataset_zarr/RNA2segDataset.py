@@ -15,7 +15,7 @@ import albumentations as A
 from typing import Optional
 from scipy import ndimage as ndi
 from torch.utils.data import Dataset
-from sopa._sdata import to_intrinsic
+from sopa.utils.utils import to_intrinsic
 from matplotlib import colors as mcolors
 from cellpose import transforms as tf_cp
 from albumentations.core.transforms_interface import ImageOnlyTransform
@@ -25,6 +25,8 @@ from rna2seg.utils import create_cell_contours
 from rna2seg.dataset_zarr import StainingTranscriptSegmentation
 from rna2seg.dataset_zarr.background import get_background_mask
 from rna2seg.dataset_zarr.data_augmentation import random_rotate_and_resize, cellbound_transform
+from sopa._constants import  SopaKeys
+
 
 log = logging.getLogger(__name__)
 
@@ -413,6 +415,9 @@ class RNA2segDataset(Dataset):
             print(f'default shape_patch_key set to {shape_patch_key}')
         assert shape_patch_key in sdata, f"shape_patch_key {shape_patch_key} not in sdata, set the correct shape_patch_key"
 
+        ### for compatibility with the sopa 2
+        sdata[SopaKeys.PATCHES] = sdata[shape_patch_key]
+
         self.key_nuclei_segmentation = key_nuclei_segmentation
 
         st_segmentation = StainingTranscriptSegmentation(
@@ -494,7 +499,7 @@ class RNA2segDataset(Dataset):
             A.CropNonEmptyMaskIfExists(height=self.resize ,
                                        width=self.resize,
                                        p=1.0),
-            A.RandomResizedCrop(size=(self.resize , self.resize) , scale=(0.5, 1), ratio=(0.75, 1.33), p=0.5)
+            #A.RandomResizedCrop(size=(self.resize , self.resize) , scale=(0.5, 1), ratio=(0.75, 1.33), p=0.5)
         ])
 
         self.training_mode=training_mode
@@ -600,17 +605,14 @@ class RNA2segDataset(Dataset):
                 compute_all_patch = False
 
             except  Exception as e:
-                print(f"Error while loading cache: {e}")
-                print(f"Recomputing the patch {patch_index}")
+
+                print(f"No cache found for patch {patch_index} Recomputing the patch {patch_index}")
 
 
         if compute_all_patch:
-            folder_to_save = Path(self.patch_dir) / str(patch_index)
-            folder_to_save.mkdir(exist_ok=True, parents=True)
             dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background, list_gene, \
                 array_coord, segmentation_nuclei, bounds = self._get_patch_input(
                 patch_index=patch_index,
-                folder_to_save=folder_to_save
             )
 
 
@@ -656,7 +658,7 @@ class RNA2segDataset(Dataset):
 
         return dict_result
 
-    def _get_patch_input(self, patch_index, folder_to_save):
+    def _get_patch_input(self, patch_index):
 
         if self.training_mode:
             self.return_agg_segmentation = True

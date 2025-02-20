@@ -1,7 +1,7 @@
 
 #### tile the images
 from __future__ import annotations
-
+from sopa._constants import  SopaKeys
 import sys
 import logging
 import rasterio
@@ -18,7 +18,7 @@ from scipy.ndimage import gaussian_filter
 from cellpose.dynamics import  labels_to_flows
 from spatialdata import SpatialData
 from sopa._constants import SopaFiles
-from sopa.segmentation.stainings import StainingSegmentation
+from sopa.segmentation._stainings import StainingSegmentation
 
 from rna2seg._constant import RNA2segFiles
 from rna2seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
@@ -82,6 +82,8 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             gaussian_sigma=gaussian_sigma
         )
 
+
+        self.sdata = sdata
         del self.channels
         self.channels_dapi = channels_dapi
         self.channels_cellbound = channels_cellbound
@@ -335,20 +337,9 @@ class StainingTranscriptSegmentation(StainingSegmentation):
 
     def get_segmentation_crop(self, bounds, shape, key_cell):
 
-        # to clean in self.sdata[key_cell].cx[bounds[0]:bounds[2], bounds[1]:bounds[3]] ?
-        if key_cell==self.key_cell_segmentation:
-            cell_segmentation = self.cell_segmentation.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
-        elif key_cell==self.key_cell_consistent_with_nuclei:
-            cell_segmentation = self.cell_consistent_with_nuclei.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
-        elif key_cell==self.key_cell_consistent_without_nuclei:
-            cell_segmentation = self.cell_consistent_without_nuclei.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
-        elif key_cell==self.key_nuclei_segmentation:
-            cell_segmentation = self.sdata[self.key_nuclei_segmentation].cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
-        elif key_cell==self.key_nucleus_consistent_not_in_cell:
-            cell_segmentation = self.sdata[self.key_nucleus_consistent_not_in_cell].cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
-        else:
-            #raise ValueError(f"key_cell {key_cell} not in the list of key_cell_segmentation or key_cell_consistent, not implemented")
-            cell_segmentation = self.sdata[key_cell].cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
+
+        assert key_cell in self.sdata.shapes, f"{key_cell} not in sdata.shapes {self.sdata.shapes}"
+        cell_segmentation = self.sdata[key_cell].cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
         """
         ## can be optimised with R-tree index ? if needed ?
         sindex = self.image.sindex

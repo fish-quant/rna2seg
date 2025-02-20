@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import geopandas as gpd
 import spatialdata as sd
-from sopa._sdata import get_spatial_image
+from sopa.utils.utils import get_spatial_image
 from spatialdata.models import ShapesModel
 from spatialdata.transformations import get_transformation
 from shapely.validation import explain_validity
