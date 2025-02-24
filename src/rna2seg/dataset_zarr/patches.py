@@ -34,7 +34,8 @@ def create_patch_rna2seg(sdata : sd.SpatialData,
                         patch_width : int, patch_overlap : int,
                         min_transcripts_per_patch : int,
                         folder_patch_rna2seg : Path | str | None = None,
-                        overwrite : bool = False
+                        overwrite : bool = False,
+                        gene_column_name : str = "gene",
                          ):
 
     """
@@ -105,6 +106,7 @@ def create_patch_rna2seg(sdata : sd.SpatialData,
         csv_name=csv_name,
         min_transcripts_per_patch=min_transcripts_per_patch,
         cache_dir = folder_patch_rna2seg,
+        gene_column_name = gene_column_name,
 
     )
 
@@ -153,6 +155,7 @@ class TranscriptPatches_with_scale(OnDiskTranscriptPatches):
             csv_name: str,
             min_transcripts_per_patch: int,
             cache_dir: str,
+            gene_column_name : str = "gene",
     ):
 
         super().__init__(sdata=sdata,
@@ -168,6 +171,7 @@ class TranscriptPatches_with_scale(OnDiskTranscriptPatches):
         self.sdata = sdata #self.patches_2d.sdata if self.patches_2d is not None else None
         self.shape_patch_key = shape_patch_key
         self.cache_dir = Path(cache_dir)
+        self.gene_column_name = gene_column_name
 
 
 
@@ -241,13 +245,13 @@ class TranscriptPatches_with_scale(OnDiskTranscriptPatches):
 
             assert "x" in patch_df.columns, f"column 'x' not found in {patch_df.columns}"
             assert "y" in patch_df.columns, f"column 'y' not found in {patch_df.columns}"
-            assert "gene" in patch_df.columns, f"column 'gene' not found in {patch_df.columns}"
+            assert self.gene_column_name in patch_df.columns, f"column 'gene' not found in {patch_df.columns}"
 
             list_x = patch_df["x"].tolist()
             list_y = patch_df["y"].tolist()
-            list_gene = patch_df["gene"].tolist()
+            list_gene = patch_df[self.gene_column_name].tolist()
             ## create a new dataframe
-            patch_df_new = pd.DataFrame(list(zip(list_x, list_y, list_gene)), columns =['x', 'y', 'gene'])
+            patch_df_new = pd.DataFrame(list(zip(list_x, list_y, list_gene)), columns =['x', 'y', self.gene_column_name])
             #print(f'patch_df_new {patch_df_new}')
             ## set columns x, y and gene
             patch_df_new.to_csv(patch_path)

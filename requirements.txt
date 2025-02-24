@@ -7,3 +7,4 @@ xarray>=2024.10.0
 huggingface-hub
 torchvision>=0.12
 tensorboard>=2.16
+albumentations>=1.4
