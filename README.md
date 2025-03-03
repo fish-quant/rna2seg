@@ -41,11 +41,13 @@ Then, install RNA2seg and its dependencies:
 
 RNA2seg is now installed and ready to use. 
 
-## Features
+## Support
+
+If you have any bug or questions relative to the package, please open an issue 
 
 ## Citation
 
-If you use this library, please be sure to cite:
+If you use this library, please cite:
 
 ```
 @article{}
