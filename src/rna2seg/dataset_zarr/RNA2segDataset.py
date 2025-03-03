@@ -1,44 +1,45 @@
 #%%
 
-import cv2
 import json
-import torch
 import logging
-import tifffile
+from pathlib import Path
+from time import time
+from typing import Optional
+
+import albumentations as A
+import cv2
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-from time import time
 import spatialdata as sd
-from pathlib import Path
-import albumentations as A
-from typing import Optional
-from scipy import ndimage as ndi
-from torch.utils.data import Dataset
-from sopa.utils.utils import to_intrinsic
-from matplotlib import colors as mcolors
-from cellpose import transforms as tf_cp
+import tifffile
+import torch
 from albumentations.core.transforms_interface import ImageOnlyTransform
+from cellpose import transforms as tf_cp
+from matplotlib import colors as mcolors
+from scipy import ndimage as ndi
+from sopa._constants import SopaKeys
+from sopa.utils.utils import to_intrinsic
+from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from rna2seg._constant import RNA2segFiles
-from rna2seg.utils import create_cell_contours
-from rna2seg.dataset_zarr import StainingTranscriptSegmentation
+# from rna2seg.dataset_zarr import StainingTranscriptSegmentation
 from rna2seg.dataset_zarr.background import get_background_mask
-from rna2seg.dataset_zarr.data_augmentation import random_rotate_and_resize, cellbound_transform
-from sopa._constants import  SopaKeys
-
+from rna2seg.dataset_zarr.data_augmentation import (cellbound_transform,
+                                                    random_rotate_and_resize)
+from rna2seg.utils import create_cell_contours
 
 log = logging.getLogger(__name__)
 
 import dask
+
 dask.config.set(scheduler='synchronous')
 
 
-def create_augmented_patch_df(patch_df, factor=2, std_dev = 5):
-
+def create_augmented_patch_df(patch_df, factor=2, std_dev=5):
     new_rows = []
     for idx, row in patch_df.iterrows():
-        for i in range(factor-1):
+        for i in range(factor - 1):
             x_new = row['x'] + np.random.normal(0, std_dev)
             y_new = row['y'] + np.random.normal(0, std_dev)
             new_row = row.copy()
@@ -48,6 +49,7 @@ def create_augmented_patch_df(patch_df, factor=2, std_dev = 5):
 
     new_df = pd.DataFrame(new_rows)
     return pd.concat([patch_df, new_df], ignore_index=True)
+
 
 def pad_image3D_to_shape(image, target_shape=(1200, 1200)):
     """
@@ -64,12 +66,13 @@ def pad_image3D_to_shape(image, target_shape=(1200, 1200)):
     current_shape = image.shape
     padding = (
         (0, target_shape[0] - current_shape[1]),  # Padding for rows
-        (0, target_shape[1] - current_shape[2])   # Padding for columns
+        (0, target_shape[1] - current_shape[2])  # Padding for columns
     )
     new_image = np.zeros((image.shape[0], target_shape[0], target_shape[1]), dtype=image.dtype)
     for i in range(current_shape[0]):
         new_image[i] = pad_image2D_to_shape(image[i], target_shape=target_shape)
     return new_image
+
 
 def pad_image2D_to_shape(image, target_shape=(1200, 1200)):
     """
@@ -85,10 +88,11 @@ def pad_image2D_to_shape(image, target_shape=(1200, 1200)):
     current_shape = image.shape
     padding = (
         (0, target_shape[0] - current_shape[0]),  # Padding for rows
-        (0, target_shape[1] - current_shape[1])   # Padding for columns
+        (0, target_shape[1] - current_shape[1])  # Padding for columns
     )
     padded_image = np.pad(image, padding, mode='constant', constant_values=0)
     return padded_image
+
 
 class MaxFilter(ImageOnlyTransform):
     def __init__(self, max_filter_size=0, always_apply=False, p=1.0):
@@ -100,12 +104,13 @@ class MaxFilter(ImageOnlyTransform):
             img = ndi.maximum_filter(img, size=(self.max_filter_size, self.max_filter_size, 1))
         return img
 
+
 def compute_array_coord(bounds,
                         patch_df,
                         image_shape,
                         scaling_factor_coord):
     offset_x = bounds[0]
-    offset_y= bounds[1]
+    offset_y = bounds[1]
     column_y = "y"
     column_x = "x"
     rna_df = patch_df.copy()
@@ -118,8 +123,10 @@ def compute_array_coord(bounds,
     assert (rna_df[column_x] >= 0).all, str_assert
     assert (rna_df[column_x] < image_shape[1]).all(), str_assert
     array_coord = np.array(rna_df[[column_y, column_x]].values)
-    assert max(array_coord[:,0]) < bounds[3], f"rna coordiante max doe not match image shape, check preprocessing : {max(array_coord[:,0])} >= {max( bounds[3])}"
-    assert max(array_coord[:,1]) < bounds[2], f"rna coordiante max doe not match image shape, check preprocessing : {max(array_coord[:,1])} >= {max( bounds[2])}"
+    assert max(array_coord[:, 0]) < bounds[
+        3], f"rna coordiante max doe not match image shape, check preprocessing : {max(array_coord[:, 0])} >= {max(bounds[3])}"
+    assert max(array_coord[:, 1]) < bounds[
+        2], f"rna coordiante max doe not match image shape, check preprocessing : {max(array_coord[:, 1])} >= {max(bounds[2])}"
     assert np.min(array_coord) >= 0, f" negative coordinate not allowed in patches"
     ## resize coordinate
     array_coord = (array_coord * scaling_factor_coord).astype(int)
@@ -163,7 +170,7 @@ def rna2img(df_crop, dict_gene_value: dict | None,
     if dict_gene_value is not None:
         list_coord_value = [dict_gene_value[gene] for gene in list_gene]
     else:
-        list_coord_value =  [1 for gene in list_gene]
+        list_coord_value = [1 for gene in list_gene]
 
     img = np.zeros(image_shape, dtype=np.float32)
     if len(list_y) == 0:
@@ -181,7 +188,7 @@ def rna2img(df_crop, dict_gene_value: dict | None,
     if max_filter_size > 0:
         img = ndi.maximum_filter(img, size=(max_filter_size, max_filter_size, 1))
 
-    if gaussian_kernel_size > 0: # it would be more optimise to apply it after resizing/downsampling
+    if gaussian_kernel_size > 0:  # it would be more optimise to apply it after resizing/downsampling
         img = ndi.gaussian_filter(img, sigma=(gaussian_kernel_size, gaussian_kernel_size, 0))
     return img
 
@@ -190,9 +197,9 @@ def remove_cell_in_background(agreement_segmentation,
                               background,
                               threshold_cell_in_bg=0.05,
                               threshold_nuclei_in_bg=0.5,
-                              agreement_segmentation_without_nuclei = None,
-                              segmentation_nuclei_not_in_cell = None,
-                              remove_nucleus_seg_from_bg = True,
+                              agreement_segmentation_without_nuclei=None,
+                              segmentation_nuclei_not_in_cell=None,
+                              remove_nucleus_seg_from_bg=True,
                               segmentation_nuclei=None,
                               ):
     """
@@ -204,6 +211,7 @@ def remove_cell_in_background(agreement_segmentation,
     Returns:
     """
     t = time()
+
     def _remove_cell_in_background(agreement_segmentation, background, threshold_bg=0.5):
         overlap_bg_cell = ((agreement_segmentation > 0).astype(int) + (background > 0).astype(int)) == 2
         overlap_bg_cell = overlap_bg_cell * agreement_segmentation
@@ -221,7 +229,7 @@ def remove_cell_in_background(agreement_segmentation,
         for i in overlap_bg_cell_unique:
             new_ag_count.append(ag_count[ag_unique.index(i)])
 
-        overlap_bg_cell = overlap_bg_cell_count/ np.array(new_ag_count)
+        overlap_bg_cell = overlap_bg_cell_count / np.array(new_ag_count)
 
         cell_to_remove = overlap_bg_cell > threshold_bg
         overlap_bg_cell_unique = overlap_bg_cell_unique[cell_to_remove]
@@ -229,7 +237,6 @@ def remove_cell_in_background(agreement_segmentation,
         corrected_agreement_segmentation = agreement_segmentation.copy()
         corrected_agreement_segmentation[np.isin(agreement_segmentation, overlap_bg_cell_unique)] = 0
         return corrected_agreement_segmentation
-
 
     if agreement_segmentation_without_nuclei is not None:
         corrected_agreement_segmentation_without_nuclei = _remove_cell_in_background(
@@ -245,7 +252,7 @@ def remove_cell_in_background(agreement_segmentation,
             background=background,
             threshold_bg=threshold_nuclei_in_bg)
         # remove the overlap between target
-        corrected_segmentation_nuclei_not_in_cell[corrected_agreement_segmentation_without_nuclei > 0] = 0 #
+        corrected_segmentation_nuclei_not_in_cell[corrected_agreement_segmentation_without_nuclei > 0] = 0  #
         corrected_segmentation_nuclei_not_in_cell[agreement_segmentation > 0] = 0
     else:
         corrected_segmentation_nuclei_not_in_cell = np.zeros_like(agreement_segmentation).astype(int)
@@ -256,46 +263,48 @@ def remove_cell_in_background(agreement_segmentation,
 
     if remove_nucleus_seg_from_bg:
         assert segmentation_nuclei is not None, "segmentation_nuclei should be provided if remove_nucleus_seg_from_bg is True"
-        correct_background = (background>0).astype(int) - (corrected_agreement_segmentation_without_nuclei > 0).astype(int) \
+        correct_background = (background > 0).astype(int) - (
+                corrected_agreement_segmentation_without_nuclei > 0).astype(int) \
                              - (agreement_segmentation > 0).astype(int) \
                              - (corrected_segmentation_nuclei_not_in_cell > 0).astype(int) - \
                              (segmentation_nuclei > 0).astype(int)
     else:
-        correct_background = (background>0).astype(int) - (corrected_agreement_segmentation_without_nuclei > 0).astype(int) \
-                             - (agreement_segmentation > 0).astype(int) - (corrected_segmentation_nuclei_not_in_cell > 0).astype(int)
+        correct_background = (background > 0).astype(int) - (
+                corrected_agreement_segmentation_without_nuclei > 0).astype(int) \
+                             - (agreement_segmentation > 0).astype(int) - (
+                                     corrected_segmentation_nuclei_not_in_cell > 0).astype(int)
     correct_background = (correct_background > 0).astype(int)
 
     max_indice_cell = np.max(agreement_segmentation).astype(int)
-    corrected_agreement_segmentation_without_nuclei[corrected_agreement_segmentation_without_nuclei > 0] += max_indice_cell
+    corrected_agreement_segmentation_without_nuclei[
+        corrected_agreement_segmentation_without_nuclei > 0] += max_indice_cell
     max_indice_cell = np.max(corrected_agreement_segmentation_without_nuclei)
     corrected_segmentation_nuclei_not_in_cell[corrected_segmentation_nuclei_not_in_cell > 0] += max_indice_cell
     #max_indice_cell = np.max(segmentation_nuclei_not_in_cell)
 
-    corrected_agreement_segmentation = agreement_segmentation +  corrected_agreement_segmentation_without_nuclei + corrected_segmentation_nuclei_not_in_cell
+    corrected_agreement_segmentation = agreement_segmentation + corrected_agreement_segmentation_without_nuclei + corrected_segmentation_nuclei_not_in_cell
     #mask_gradient = (corrected_agreement_segmentation > 0).astype(int) + (correct_background>0).astype(int)
     mask_gradient = ((corrected_agreement_segmentation > 0).astype(int) +
                      (corrected_agreement_segmentation_without_nuclei > 0).astype(int) +
-                     (corrected_segmentation_nuclei_not_in_cell >0).astype(int) *3 +
-                     (correct_background>0).astype(int))
+                     (corrected_segmentation_nuclei_not_in_cell > 0).astype(int) * 3 +
+                     (correct_background > 0).astype(int))
 
     #print(f"Time to remove cell in background: {time() - t:.6f}s")
 
-    return mask_gradient, corrected_agreement_segmentation, correct_background #, corrected_agreement_segmentation_without_nuclei
-
-
+    return mask_gradient, corrected_agreement_segmentation, correct_background  #, corrected_agreement_segmentation_without_nuclei
 
 
 class RNA2segDataset(Dataset):
 
     def __init__(self,
 
-                 sdata : sd.SpatialData,
-                 channels_dapi : list[str], # should be just STR
-                 channels_cellbound : list[str] | None=None,
+                 sdata: sd.SpatialData,
+                 channels_dapi: list[str],  # should be just STR
+                 channels_cellbound: list[str] | None = None,
 
-                 key_cell_consistent : str | None = None,
-                 key_nucleus_consistent : str | None = None,
-                 key_nuclei_segmentation : str | None = None, # use to compute background
+                 key_cell_consistent: str | None = None,
+                 key_nucleus_consistent: str | None = None,
+                 key_nuclei_segmentation: str | None = None,  # use to compute background
 
                  dict_gene_value: dict | None = None,
 
@@ -305,34 +314,31 @@ class RNA2segDataset(Dataset):
                  patch_width: int = None,
                  patch_overlap: int = None,
 
-
                  list_patch_index: list[int] | None = None,
                  list_annotation_patches: list[int] | None = None,
                  gene_column="gene",
-                 density_threshold : float | None = None,
+                 density_threshold: float | None = None,
 
-
-                 kernel_size_background_density: None | float = 5 ,
+                 kernel_size_background_density: None | float = 5,
                  kernel_size_rna2img: float = 0.5,
                  max_filter_size_rna2img: float = 2,
                  transform_resize: Optional[A.Compose] = None,
                  transform_dapi: Optional[A.Compose] = None,
                  augment_rna_density: bool = False,
 
-
                  min_nb_cell_per_patch=1,
                  remove_cell_in_background_threshold=0.05,
                  remove_nucleus_seg_from_bg=True,
                  addition_mode=True,
-                 min_transcripts : int = 1,
+                 min_transcripts: int = 1,
 
                  #### for rna_encoding
-                 return_df = False,
-                 gene2index = None,
-                 augmentation_img = False,
+                 return_df=False,
+                 gene2index=None,
+                 augmentation_img=False,
 
                  ### save flow
-                 recompute_flow = True,
+                 recompute_flow=True,
 
                  ## for testing
                  test_return_background=False,
@@ -340,9 +346,9 @@ class RNA2segDataset(Dataset):
                  ###  for save cache
 
                  # path_cache
-                 patch_dir : Path|str| None = None, # Transcripts
-                 experiment_name = 'input_target_rna2seg', # for dev only
-                 use_cache = False,
+                 patch_dir: Path | str | None = None,  # Transcripts
+                 experiment_name='input_target_rna2seg',  # for dev only
+                 use_cache=False,
                  ## IMG AUGMENTATION
 
                  ### optional for testing
@@ -389,8 +395,7 @@ class RNA2segDataset(Dataset):
         :param shape_patch_key: Key for patch shape, or None.
         """
 
-
-        self.training_mode = training_mode # should be imporve
+        self.training_mode = training_mode  # should be imporve
         self.evaluation_mode = evaluation_mode
 
         if self.training_mode:
@@ -405,10 +410,7 @@ class RNA2segDataset(Dataset):
             self.return_agg_segmentation = True
             self.return_flow = True
 
-        if channels_cellbound is None:
-            channels_cellbound = sdata['staining_z3']["scale0"].c.compute().values.tolist()
-            channels_cellbound = list(set(channels_cellbound) - set(channels_dapi))
-
+        assert channels_cellbound is not None, "channels_cellbound should be provided"
         # path parameter
         if shape_patch_key is None:
             shape_patch_key = f"sopa_patches_rna2seg_{patch_width}_{patch_overlap}"
@@ -420,25 +422,24 @@ class RNA2segDataset(Dataset):
 
         self.key_nuclei_segmentation = key_nuclei_segmentation
 
+        from rna2seg.dataset_zarr import StainingTranscriptSegmentation
+
         st_segmentation = StainingTranscriptSegmentation(
             sdata=sdata,
             channels_dapi=channels_dapi,
             channels_cellbound=channels_cellbound,
-            key_nuclei_segmentation=key_nuclei_segmentation, # use to compute background
+            key_nuclei_segmentation=key_nuclei_segmentation,  # use to compute background
             key_cell_consistent=key_cell_consistent,
             key_nucleus_consistent=key_nucleus_consistent,
             density_threshold=density_threshold,
             patch_dir=patch_dir,
-            shape_patch_key =shape_patch_key,
+            shape_patch_key=shape_patch_key,
         )
         self.st_segmentation = st_segmentation
 
         self.min_nb_cell_per_patch = min_nb_cell_per_patch
         self.list_patch_index = list_patch_index
         self.min_transcripts = min_transcripts
-
-
-
 
         self.gene_column = gene_column
         self.dict_gene_value = dict_gene_value
@@ -449,15 +450,13 @@ class RNA2segDataset(Dataset):
 
         self.transform_resize = transform_resize
         if self.transform_resize is not None:
-            assert str(type(self.transform_resize.__dict__["transforms"][0])) == "<class 'albumentations.augmentations.geometric.resize.Resize'>",  "The first transform should be a resize transform"
+            assert str(type(self.transform_resize.__dict__["transforms"][
+                                0])) == "<class 'albumentations.augmentations.geometric.resize.Resize'>", "The first transform should be a resize transform"
             assert len(self.transform_resize.__dict__["transforms"]) == 1, "Only one resize transform should be applied"
             self.resize = int(self.transform_resize.__dict__["transforms"][0].__dict__['width'])
 
-
-
         self.transform_dapi = transform_dapi
         self.augment_rna_density = augment_rna_density
-
 
         if self.dict_gene_value is not None:
             self.nb_channel_rna = len(self.dict_gene_value[list(self.dict_gene_value.keys())[0]])
@@ -487,35 +486,31 @@ class RNA2segDataset(Dataset):
 
         self.use_cache = use_cache
         self.experiment_name = experiment_name
-        self.patch_dir =  patch_dir
-
-
+        self.patch_dir = patch_dir
 
         ######" data augmentation ######
         self.cellbound_transform = cellbound_transform
-        self.transfrom_augment_resize= A.Compose([
+        self.transfrom_augment_resize = A.Compose([
             A.RandomScale(scale_limit=(-0.5, 0.5), interpolation=1, p=0.5, always_apply=None),
-            A.PadIfNeeded(min_height=self.resize , min_width=self.resize , border_mode=cv2.BORDER_CONSTANT, value=0, p=1),
-            A.CropNonEmptyMaskIfExists(height=self.resize ,
+            A.PadIfNeeded(min_height=self.resize, min_width=self.resize, border_mode=cv2.BORDER_CONSTANT, value=0, p=1),
+            A.CropNonEmptyMaskIfExists(height=self.resize,
                                        width=self.resize,
                                        p=1.0),
             #A.RandomResizedCrop(size=(self.resize , self.resize) , scale=(0.5, 1), ratio=(0.75, 1.33), p=0.5)
         ])
 
-        self.training_mode=training_mode
-        self.evaluation_mode=evaluation_mode
-
+        self.training_mode = training_mode
+        self.evaluation_mode = evaluation_mode
 
         if self.list_patch_index is None:
 
             nb_patches = len(self.st_segmentation.sdata[self.st_segmentation.shape_patch_key])
             self.list_patch_index = list(range(nb_patches))
             shape_segmentation_key = self.st_segmentation.key_cell_consistent_with_nuclei
-            self.list_patch_index  = self.st_segmentation.get_valid_patch(min_nb_cell = self.min_nb_cell_per_patch,
-                                                                          list_path_index = self.list_patch_index,
-                                                                          shape_segmentation_key = shape_segmentation_key,
-                                                                          min_transcripts=self.min_transcripts)
-
+            self.list_patch_index = self.st_segmentation.get_valid_patch(min_nb_cell=self.min_nb_cell_per_patch,
+                                                                         list_path_index=self.list_patch_index,
+                                                                         shape_segmentation_key=shape_segmentation_key,
+                                                                         min_transcripts=self.min_transcripts)
 
             log.info(f"Number of valid patches: {len(self.list_patch_index)}")
             print(f"Number of valid patches: {len(self.list_patch_index)}")
@@ -533,13 +528,13 @@ class RNA2segDataset(Dataset):
                 patch_width = re.search(r"sopa_patches_rna2seg_(\d+)_", shape_patch_key)
             self._set_threshold(
                 max_nb_crops=500,
-                kernel_size = 9,
-                percentile_threshold = 5,
+                kernel_size=9,
+                percentile_threshold=5,
                 shape=(patch_width, patch_width)
             )
 
     def __len__(self):
-        return  len(self.list_patch_index)
+        return len(self.list_patch_index)
 
     def __getitem__(self, idx):
         """
@@ -574,7 +569,6 @@ class RNA2segDataset(Dataset):
                 img_cellbound = tifffile.imread(folder_to_save / RNA2segFiles.CELLBOUND)
                 dapi = tifffile.imread(folder_to_save / RNA2segFiles.DAPI)
                 if self.training_mode:
-
                     mask_flow = tifffile.imread(folder_to_save / RNA2segFiles.MASK_FLOW)
                     mask_gradient = tifffile.imread(folder_to_save / RNA2segFiles.GRADIENT)
 
@@ -586,7 +580,7 @@ class RNA2segDataset(Dataset):
                 if self.key_nuclei_segmentation:
                     segmentation_nuclei = tifffile.imread(folder_to_save / RNA2segFiles.SEGMENTATION_NUCLEI)
 
-                path_csv =  Path(self.patch_dir) / str(patch_index)
+                path_csv = Path(self.patch_dir) / str(patch_index)
                 bounds = json.load(open(path_csv / RNA2segFiles.BOUNDS_FILE, "r"))
                 patch_df = pd.read_csv(path_csv / RNA2segFiles.TRANSCRIPTS_FILE)
 
@@ -608,13 +602,11 @@ class RNA2segDataset(Dataset):
 
                 print(f"No cache found for patch {patch_index} Recomputing the patch {patch_index}")
 
-
         if compute_all_patch:
             dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background, list_gene, \
                 array_coord, segmentation_nuclei, bounds = self._get_patch_input(
                 patch_index=patch_index,
             )
-
 
         ############### data augmentation ###################################
 
@@ -668,11 +660,9 @@ class RNA2segDataset(Dataset):
             self.return_agg_segmentation = False
             self.return_flow = False
 
-
         if self.evaluation_mode:
             self.return_agg_segmentation = True
             self.return_flow = True
-
 
         (dapi, patch_df, agreement_segmentation, agreement_segmentation_without_nuclei,
          segmentation_nuclei, segmentation_nuclei_not_in_cell, bounds) = self.st_segmentation.get_patch_input(
@@ -683,13 +673,14 @@ class RNA2segDataset(Dataset):
         width, height = dapi.shape[0], dapi.shape[1]
         target_width = bounds[2] - bounds[0]
         target_height = bounds[3] - bounds[1]
-        assert target_height == target_width, f"width of the patch does not match height {target_height} != {target_width}, not supported yet"
+        assert target_height == target_width, (f"width of the patch does not match height {target_height} "
+                                               f"!= {target_width}, not supported yet")
         if (width, height) != (target_width, target_height):
             dapi = pad_image2D_to_shape(dapi, target_shape=(target_width, target_height))
             if agreement_segmentation is not None:
-                agreement_segmentation = pad_image2D_to_shape(agreement_segmentation, target_shape=(target_width, target_height))
+                agreement_segmentation = pad_image2D_to_shape(agreement_segmentation,
+                                                              target_shape=(target_width, target_height))
                 log.info(f"patch {patch_index} is not square, adding padding")
-
 
         if agreement_segmentation is None:
             agreement_segmentation = np.zeros((target_width, target_height))
@@ -697,7 +688,7 @@ class RNA2segDataset(Dataset):
         if self.st_segmentation.channels_cellbound is not None:
             img_cellbound = self.st_segmentation.get_cellbound_staining(patch_index)
             img_cellbound = img_cellbound.astype('float32')
-            ## normalize
+            # normalize
             if img_cellbound.ndim == 2:
                 img_cellbound = tf_cp.normalize99(img_cellbound)
             else:
@@ -708,7 +699,8 @@ class RNA2segDataset(Dataset):
             if (img_cellbound.shape[-2], img_cellbound.shape[-1]) != (target_width, target_height):
                 new_img_cellbound = np.zeros((len(img_cellbound), target_width, target_height))
                 for clb in range(len(img_cellbound)):
-                    new_img_cellbound[clb] = pad_image2D_to_shape(img_cellbound[clb], target_shape=(target_width, target_height))
+                    new_img_cellbound[clb] = pad_image2D_to_shape(img_cellbound[clb],
+                                                                  target_shape=(target_width, target_height))
                 img_cellbound = new_img_cellbound
         else:
             img_cellbound = None
@@ -719,13 +711,9 @@ class RNA2segDataset(Dataset):
         assert (patch_df["x"] >= bounds[0]).all(), "x coordinate outside the image"
         assert (patch_df["x"] <= bounds[2]).all(), "x coordinate outside the image"
 
-
-
         if self.transform_dapi is not None:
             dapi = self.transform_dapi(image=dapi)["image"]
         dapi = tf_cp.normalize99(dapi)
-
-
 
         if len(patch_df) == 0:
             rna = np.zeros((target_width, target_height, self.nb_channel_rna))
@@ -737,7 +725,8 @@ class RNA2segDataset(Dataset):
                 list_gene = [self.gene2index[gene] for gene in list_gene]
 
                 image_shape = (dapi.shape[0], dapi.shape[1], self.nb_channel_rna)
-                scaling_factor_coord = self.transform_resize.__dict__["transforms"][0].__dict__['width'] / dapi.shape[-1]
+                scaling_factor_coord = self.transform_resize.__dict__["transforms"][0].__dict__['width'] / dapi.shape[
+                    -1]
                 array_coord = compute_array_coord(bounds,
                                                   patch_df,
                                                   image_shape,
@@ -748,58 +737,61 @@ class RNA2segDataset(Dataset):
                 array_coord = None
                 if self.augment_rna_density:
                     print("/!\ Adding the augmentation on RNA density")
-                    patch_df = create_augmented_patch_df(patch_df, factor=2, std_dev = 5)
+                    patch_df = create_augmented_patch_df(patch_df, factor=2, std_dev=5)
 
                 rna = rna2img(df_crop=patch_df, dict_gene_value=self.dict_gene_value,
-                              image_shape=(dapi.shape[0], dapi.shape[1], self.nb_channel_rna), gene_column=self.gene_column,
+                              image_shape=(dapi.shape[0], dapi.shape[1], self.nb_channel_rna),
+                              gene_column=self.gene_column,
                               column_x="x", column_y="y", offset_x=bounds[0], offset_y=bounds[1],
-                              gaussian_kernel_size=self.kernel_size_rna2img, max_filter_size=self.max_filter_size_rna2img,
+                              gaussian_kernel_size=self.kernel_size_rna2img,
+                              max_filter_size=self.max_filter_size_rna2img,
                               addition_mode=self.addition_mode)
 
-        img_input = np.concatenate([dapi[:,:, None], rna], axis=2).astype(np.float32)
+        img_input = np.concatenate([dapi[:, :, None], rna], axis=2).astype(np.float32)
 
         if self.return_flow:
-            assert self.st_segmentation.density_threshold is not None, "density threshold should be provided or set with self._set_threshold() "
-            background = get_background_mask(density_threshold= self.st_segmentation.density_threshold,
-                                             df_crop = patch_df,
-                                             shape = dapi.shape,
-                                             kernel_size=self.kernel_size_background_density ,
-                                             column_y = "y",
-                                             column_x = "x",
-                                             offset_x = bounds[0],
-                                             offset_y= bounds[1],
+            assert self.st_segmentation.density_threshold is not None, \
+                "density threshold should be provided or set with self._set_threshold() "
+            background = get_background_mask(density_threshold=self.st_segmentation.density_threshold,
+                                             df_crop=patch_df,
+                                             shape=dapi.shape,
+                                             kernel_size=self.kernel_size_background_density,
+                                             column_y="y",
+                                             column_x="x",
+                                             offset_x=bounds[0],
+                                             offset_y=bounds[1],
                                              )
 
-            ### check padding
+            # check padding
             if (agreement_segmentation.shape[0], agreement_segmentation.shape[1]) != (target_width, target_height):
-                agreement_segmentation = pad_image2D_to_shape(agreement_segmentation, target_shape=(target_width, target_height))
+                agreement_segmentation = pad_image2D_to_shape(agreement_segmentation,
+                                                              target_shape=(target_width, target_height))
 
             if segmentation_nuclei is not None:
                 if (segmentation_nuclei.shape[0], segmentation_nuclei.shape[1]) != (target_width, target_height):
-                    segmentation_nuclei = pad_image2D_to_shape(segmentation_nuclei, target_shape=(target_width, target_height))
+                    segmentation_nuclei = pad_image2D_to_shape(segmentation_nuclei,
+                                                               target_shape=(target_width, target_height))
 
-
-            (mask_gradient, agreement_segmentation, background)=remove_cell_in_background(
+            (mask_gradient, agreement_segmentation, background) = remove_cell_in_background(
                 agreement_segmentation=agreement_segmentation,
                 background=background,
                 threshold_cell_in_bg=self.remove_cell_in_background_threshold,
                 agreement_segmentation_without_nuclei=agreement_segmentation_without_nuclei,
                 segmentation_nuclei_not_in_cell=segmentation_nuclei_not_in_cell,
-                remove_nucleus_seg_from_bg =self.remove_nucleus_seg_from_bg,
+                remove_nucleus_seg_from_bg=self.remove_nucleus_seg_from_bg,
                 segmentation_nuclei=segmentation_nuclei,
 
             )
         else:
-            mask_gradient =  np.zeros((target_width, target_height))
-            background  =  np.zeros((target_width, target_height))
-
+            mask_gradient = np.zeros((target_width, target_height))
+            background = np.zeros((target_width, target_height))
 
         if self.return_flow:
-            from cellpose.dynamics import  labels_to_flows
+            from cellpose.dynamics import labels_to_flows
             target = labels_to_flows(
-                [agreement_segmentation], files=None, redo_flows=False, device = torch.device("cpu")
+                [agreement_segmentation], files=None, redo_flows=False, device=torch.device("cpu")
             )[0]
-            target[:,agreement_segmentation==0] = 0
+            target[:, agreement_segmentation == 0] = 0
             target[:, background > 0] = 0
             label, pred, flow_x, flow_y = target
         else:
@@ -814,13 +806,15 @@ class RNA2segDataset(Dataset):
             target = [pred, flow_x, flow_y]
 
         target = np.array(target)
-        ## check padding for target
+        # check padding for target
         if (target.shape[1], target.shape[2]) != (target_width, target_height):
             target = pad_image3D_to_shape(target, target_shape=(target_width, target_height))
         len_target = len(target)
 
-        ### apply transformation
-        if self.transform_resize: # todo : problem mask_flow is not the same size depending of the mode should be simplified by returning the label outside mask_flow
+        # apply transformation
+        if self.transform_resize:
+            # todo : problem mask_flow is not the same size depending of the mode should be
+            #  simplified by returning the label outside mask_flow
             # do fonction resize
             mask_flow = np.array([*target, mask_gradient]).astype(np.float32)
             if img_cellbound is not None:
@@ -830,10 +824,10 @@ class RNA2segDataset(Dataset):
             img_input = transformed['image'].astype(np.float32)
             mask_flow = np.array(transformed['masks'][:len_target]).astype(np.float32)
             mask_gradient = (np.array(transformed['masks'][len_target])).astype(int)
-            img_cellbound = np.array(transformed['masks'][len_target+1:])
+            img_cellbound = np.array(transformed['masks'][len_target + 1:])
         else:
             raise NotImplementedError("transform should be provided")
-        rna2seg_input= np.transpose(img_input, (2, 0, 1))
+        rna2seg_input = np.transpose(img_input, (2, 0, 1))
 
         ################## save in a cache for future use ##################
         dapi = rna2seg_input[:1]
@@ -861,7 +855,6 @@ class RNA2segDataset(Dataset):
                 tifffile.imwrite(folder_to_save / RNA2segFiles.GRADIENT, mask_gradient)
             tifffile.imwrite(folder_to_save / RNA2segFiles.CELLBOUND, img_cellbound)
 
-
             if self.return_flow:
                 tifffile.imwrite(folder_to_save / RNA2segFiles.BACKGROUND, background)
 
@@ -871,7 +864,8 @@ class RNA2segDataset(Dataset):
             if segmentation_nuclei is not None:
                 tifffile.imwrite(folder_to_save / RNA2segFiles.SEGMENTATION_NUCLEI, segmentation_nuclei)
 
-        return dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background, list_gene, array_coord, segmentation_nuclei, bounds
+        return (dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background, list_gene, array_coord,
+                segmentation_nuclei, bounds)
 
     def _augment_input(self,
                        dapi,
@@ -885,21 +879,20 @@ class RNA2segDataset(Dataset):
         assert dapi.ndim == 3 and dapi.shape[0] == 1, f"dapi should have shape (1, H, W) but is {dapi.shape}"
 
         dapi = tf_cp.normalize99(dapi[0])
-        dapi  = self.cellbound_transform(image=dapi)['image'] # Augment
+        dapi = self.cellbound_transform(image=dapi)['image']  # Augment
         dapi = dapi[None, :, :]
 
-
         img_cellbound = img_cellbound.astype('float32')
-        if img_cellbound.ndim == 2: # for compatibility
+        if img_cellbound.ndim == 2:  # for compatibility
             img_cellbound = np.array([img_cellbound])
-        assert img_cellbound.ndim  == 3
-        if np.max(img_cellbound) > 3: # check that it is not already normailzed between 0 and 1
+        assert img_cellbound.ndim == 3
+        if np.max(img_cellbound) > 3:  # check that it is not already normailzed between 0 and 1
             for i in range(len(img_cellbound)):
                 img_cellbound[i] = tf_cp.normalize99(img_cellbound[i])
         augmented_image = self.cellbound_transform(image=np.transpose(img_cellbound, (1, 2, 0)))['image']
         img_cellbound = np.transpose(augmented_image, (2, 0, 1))
 
-        ### rotation ###
+        # rotation #
         if np.random.rand() < self.prob_rotate_resize:
 
             n_dapi = dapi.shape[0]
@@ -913,13 +906,13 @@ class RNA2segDataset(Dataset):
                 input_image=input_image, mask_flow=mask_flow)
 
             dapi = transformed_input_image[:n_dapi]
-            rna_img = transformed_input_image[n_dapi:n_dapi+n_rna_img]
-            img_cellbound = transformed_input_image[n_dapi+n_rna_img:n_dapi+n_rna_img+ncb]
-            mask_gradient = transformed_input_image[n_dapi+n_rna_img+ncb]
+            rna_img = transformed_input_image[n_dapi:n_dapi + n_rna_img]
+            img_cellbound = transformed_input_image[n_dapi + n_rna_img:n_dapi + n_rna_img + ncb]
+            mask_gradient = transformed_input_image[n_dapi + n_rna_img + ncb]
             if self.test_return_background:
                 background = transformed_input_image[-1]
 
-        ### augment resize ###
+        # augment resize ###
 
         # should I leave RNA in transfrom_augment_resize ?
         if np.random.rand() < self.prob_transfrom_augment_resize:
@@ -952,18 +945,18 @@ class RNA2segDataset(Dataset):
                 f"original_shape_mask.shape should be {original_shape_mask} but is {original_shape_mask.shape}"
 
             dapi = transformed_input_image[:n_dapi]
-            rna_img = transformed_input_image[n_dapi:n_dapi+n_rna_img]
-            img_cellbound = transformed_input_image[n_dapi+n_rna_img:n_dapi+n_rna_img+ncb]
-            mask_gradient = transformed_input_image[n_dapi+n_rna_img+ncb]
+            rna_img = transformed_input_image[n_dapi:n_dapi + n_rna_img]
+            img_cellbound = transformed_input_image[n_dapi + n_rna_img:n_dapi + n_rna_img + ncb]
+            mask_gradient = transformed_input_image[n_dapi + n_rna_img + ncb]
         return dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background
 
     def _set_threshold(self, max_nb_crops=2000,
-                      kernel_size = 9,
-                      percentile_threshold = 5,
-                      shape=(1200, 1200),):
+                       kernel_size=9,
+                       percentile_threshold=5,
+                       shape=(1200, 1200), ):
         shape_segmentation_key = self.st_segmentation.key_cell_consistent_with_nuclei
-        list_path_index_theshold = self.st_segmentation.get_valid_patch(min_nb_cell = 1,
-                                                                        shape_segmentation_key =shape_segmentation_key,
+        list_path_index_theshold = self.st_segmentation.get_valid_patch(min_nb_cell=1,
+                                                                        shape_segmentation_key=shape_segmentation_key,
                                                                         min_transcripts=10)
 
         if len(list_path_index_theshold) > max_nb_crops:
@@ -983,47 +976,12 @@ class RNA2segDataset(Dataset):
 
         self.st_segmentation.density_threshold = density_threshold
 
-    def _set_valid_indices(self):
-
-        if (self.path_cache / f"0/{self.experiment_name}.npy").exists():
-            list_path_index = np.load(self.path_cache / f"0/{self.experiment_name}.npy",
-                                      allow_pickle=True)
-            log.info(f" valid index loaded from {self.path_cache / f'0/{self.experiment_name}/.npy'}")
-            print(f" valid index loaded from {self.path_cache / f'0/{self.experiment_name}/.npy'}")
-            print(f"valid len(list_path_index) : {len(list_path_index)}")
-
-            ## checking valid index
-            index_are_valid = True
-            list_patch_index = []
-
-            for path_idx in tqdm(list_path_index):
-                if Path(path_idx / f"{self.experiment_name}/{RNA2segFiles.RNA2SEG_INPUT}").exists():
-                    list_patch_index.append(int(path_idx.name))
-            if len(list_path_index)>0 and index_are_valid:
-                return list_patch_index
-        raise NotImplementedError("The cache is not complete, please recompute the cache")
-        log.info(f"Compute the valid index")
-        print(f"Compute the valid index")
-        list_path_index = []
-
-        for path_idx in tqdm(list(self.path_cache.glob("*")), file = sys.stdout, desc="valid index"):
-            if not path_idx.is_dir():
-                raise FileNotFoundError(f"{path_idx} is not a directory")
-            if not (path_idx / f"{self.experiment_name}").is_dir():
-                log.info(f"{path_idx / f'{self.experiment_name}'} does not exist check the preprocessing")
-                print(f"{path_idx / f'{self.experiment_name}'} does not exist check the preprocessing")
-                #continue
-                raise FileNotFoundError(f"{path_idx / f'{self.experiment_name}'} does not exist")
-            patch_df = pd.read_csv(path_idx / f"{RNA2segFiles.TRANSCRIPTS_FILE}")
-            if patch_df.empty:
-                continue
-
     def get_rna_img(
-            self, 
-            bounds, 
-            key_transcripts="transcripts", 
+            self,
+            bounds,
+            key_transcripts="transcripts",
             dict_gene_value=None,
-        ):
+    ):
         """
         Generates an image of RNA from spatial transcriptomics data within the specified bounds.
 
@@ -1044,21 +1002,21 @@ class RNA2segDataset(Dataset):
         patch_df = df[
             (df["x"] >= bounds[0]) & (df["x"] <= bounds[2]) &
             (df["y"] >= bounds[1]) & (df["y"] <= bounds[3])
-        ]
+            ]
         patch_df = patch_df.compute()
         if dict_gene_value is None:
             dict_gene_value = self.dict_gene_value
 
         img = rna2img(
-            patch_df, 
-            dict_gene_value=dict_gene_value,  
-            image_shape=(bounds[3]-bounds[1], bounds[2]-bounds[0], 3),
-            offset_x=bounds[0], offset_y=bounds[1], gene_column="gene", 
+            patch_df,
+            dict_gene_value=dict_gene_value,
+            image_shape=(bounds[3] - bounds[1], bounds[2] - bounds[0], 3),
+            offset_x=bounds[0], offset_y=bounds[1], gene_column=self.gene_column,
             max_filter_size=5,
             addition_mode=True
         )
         return img
-    
+
     def get_staining_img(self, bounds):
         """
         Generates an image of dapi and cell boundaries stainings within the specified bounds. 
@@ -1079,7 +1037,7 @@ class RNA2segDataset(Dataset):
         ).values
         return image
 
-    def get_segmentation_img(self, bounds, key_cell, image=None, color="red", size_line=5,):
+    def get_segmentation_img(self, bounds, key_cell, image=None, color="red", size_line=5, ):
         """
         Generates an image of cell segmentation within the specified bounds.
 
@@ -1101,19 +1059,20 @@ class RNA2segDataset(Dataset):
         # Define image on which to plot the segmentation (dapi or cb)
         if image is None:
             image = self.get_staining_img(bounds)[0]  # Dapi staining if image is None
-        image_with_mask=image/image.max()
+        image_with_mask = image / image.max()
         if image_with_mask.ndim == 2:
             image_with_mask = np.stack([image_with_mask] * 3, axis=-1)
 
         # Get segmentation
-        segmentation =  self.st_segmentation.get_segmentation_crop(
-            bounds = bounds, shape = image_with_mask.shape[0:2], key_cell= key_cell)
-        cell_contour_mask = create_cell_contours(segmentation, size_line = size_line)
-        
+        segmentation = self.st_segmentation.get_segmentation_crop(
+            bounds=bounds, shape=image_with_mask.shape[0:2], key_cell=key_cell)
+        cell_contour_mask = create_cell_contours(segmentation, size_line=size_line)
+
         image_with_mask[cell_contour_mask > 0] = mcolors.hex2color(color)
 
         return image_with_mask
-    
+
+
 def custom_collate_fn(batch):
     batched_data = {}
     # Assuming all dictionaries have the same structure
@@ -1122,7 +1081,7 @@ def custom_collate_fn(batch):
     max_cb_channel = 4
     for key in keys:
         items = [d[key] for d in batch]
-        if key in  ['img_cellbound']:
+        if key in ['img_cellbound']:
             items = [d[key].clone().detach() for d in batch]
             max_cb_channel = max([item.shape[0] for item in items])
             zero_img = torch.zeros_like(items[0][0:1])

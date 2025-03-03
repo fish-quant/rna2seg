@@ -9,7 +9,7 @@
 project = 'RNA2seg'
 copyright = '2025, Thomas Defard, Alice Blondel'
 author = 'Thomas Defard, Alice Blondel'
-release = '0.0.3'
+release = '0.0.5'
 
 html_logo = '../../img/mini_logo.svg'
 
@@ -25,6 +25,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
 ]
+
+
 templates_path = ['_templates']
 exclude_patterns = []
 autodoc_mock_imports = [

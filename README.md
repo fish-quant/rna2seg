@@ -30,17 +30,16 @@ Check RNA2seg's [documentation](https://rna2seg.readthedocs.io/en/latest/) to ge
 It is recommended to create a virtual environment before installing RNA2seg to isolate dependencies:  
 
 ```
-$ python -m venv rna2seg-env  
-$ source rna2seg-env/bin/activate 
+$ conda create --name rna2seg-env python=3.10
 ```
 Then, install RNA2seg and its dependencies:  
 
 ```
-(rna2seg-env) $ pip install rna2seg  
-(rna2seg-env) $ pip install -r requirements.txt  
+(rna2seg-env) $ pip install instanseg-torch==0.0.5
+(rna2seg-env) $ pip install rna2seg
 ```
 
-RNA2seg is now installed and ready to use. 🚀
+RNA2seg is now installed and ready to use. 
 
 ## Features
 
@@ -56,3 +55,10 @@ If you use this library, please be sure to cite:
 
 All datasets, required to reproduce the results of publication "RN2Aseg: a generalist model for cell segmentation1
 in image-based spatial transcriptomics2" are available at ...
+
+
+## test
+
+
+Toy dataset to run test and notebook can be downloaded at: https://cloud.minesparis.psl.eu/index.php/s/qw2HaDVxwwy1EOK
+(data from Petukhov. et al. Nat Biotechnol 40, 345–354 (2022). https://doi.org/10.1038/s41587-021-01044-w )

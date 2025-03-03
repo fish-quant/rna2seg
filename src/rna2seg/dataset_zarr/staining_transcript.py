@@ -1,34 +1,32 @@
-
 #### tile the images
 from __future__ import annotations
-from sopa._constants import  SopaKeys
-import sys
+
 import logging
-import rasterio
-import tifffile
+import sys
+from pathlib import Path
+
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-import geopandas as gpd
-from pathlib import Path
-from shapely import Polygon
-from skimage import exposure
+import rasterio
 from rasterio.features import rasterize
 from scipy.ndimage import gaussian_filter
-from cellpose.dynamics import  labels_to_flows
-from spatialdata import SpatialData
+from shapely import Polygon
+from skimage import exposure
 from sopa._constants import SopaFiles
 from sopa.segmentation._stainings import StainingSegmentation
+from spatialdata import SpatialData
+from tqdm import tqdm
 
-from rna2seg._constant import RNA2segFiles
-from rna2seg.dataset_zarr.utils.utils_preprocessing import labels_to_flows_omnipose
 from rna2seg.dataset_zarr.consistency import compute_polygon_intersection
 
 log = logging.getLogger(__name__)
 
 import dask
+
 dask.config.set({'dataframe.query-planning': False})
 dask.config.set(scheduler='synchronous')
+
 
 class StainingTranscriptSegmentation(StainingSegmentation):
     def __init__(
@@ -36,14 +34,14 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             sdata: SpatialData,
             channels_dapi: list[str] | str,
             channels_cellbound: list[str] | str,
-            shape_patch_key : str,
+            shape_patch_key: str,
             image_key: str | None = None,
-            key_cell_segmentation : str | None = None,
+            key_cell_segmentation: str | None = None,
             key_nuclei_segmentation: str | None = None,
-            key_cell_consistent  : str | None = None,
-            key_nucleus_consistent : str | None = None,
-            density_threshold : float | None = None,
-            patch_dir : str | Path | None = None,
+            key_cell_consistent: str | None = None,
+            key_nucleus_consistent: str | None = None,
+            density_threshold: float | None = None,
+            patch_dir: str | Path | None = None,
             min_area: float = 0,
             clip_limit: float = 0,
             gaussian_sigma: float = 0,
@@ -63,7 +61,8 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         :type str
         :param key_cell_consistent: key of the consistent cell segmentation in the sdata
         :type str
-        :param key_cell_consistent_without_nuclei: key of the consistent cell segmentation without nuclei in the sdata CAN BE DIRECTLY INCLUDED IN key_cell_consistent
+        :param key_cell_consistent_without_nuclei: key of the consistent cell segmentation without nuclei in the sdata
+         CAN BE DIRECTLY INCLUDED IN key_cell_consistent
         :type str
         :param key_nuclei_segmentation: key of the nuclei segmentation in the sdata
         :type str
@@ -71,10 +70,9 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         :type str
         """
 
-
         super().__init__(
             sdata=sdata,
-            method=lambda x: x, # dummy
+            method=lambda x: x,  # dummy
             channels=channels_dapi,
             image_key=image_key,
             min_area=min_area,
@@ -82,13 +80,12 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             gaussian_sigma=gaussian_sigma
         )
 
-
         self.sdata = sdata
         del self.channels
         self.channels_dapi = channels_dapi
         self.channels_cellbound = channels_cellbound
 
-        self.key_cell_segmentation = key_cell_segmentation # to remove ?
+        self.key_cell_segmentation = key_cell_segmentation  # to remove ?
         self.key_nuclei_segmentation = key_nuclei_segmentation
 
         self.key_cell_consistent = key_cell_consistent
@@ -114,9 +111,9 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             if key is not None:
                 assert key in self.sdata.shapes, f"{key} not in sdata.shapes {self.sdata.shapes}"
 
-        if self.key_cell_consistent is not None: # to remove
-                self.cell_consistent_with_nuclei =  self.sdata[self.key_cell_consistent_with_nuclei]
-                self.cell_consistent_without_nuclei =  self.sdata[self.key_cell_consistent_without_nuclei ]
+        if self.key_cell_consistent is not None:  # to remove
+            self.cell_consistent_with_nuclei = self.sdata[self.key_cell_consistent_with_nuclei]
+            self.cell_consistent_without_nuclei = self.sdata[self.key_cell_consistent_without_nuclei]
 
         self.density_threshold = density_threshold
         self.patch_dir = patch_dir
@@ -127,12 +124,10 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         self.y_max = sdata[self.image_key]["scale0"].dims['y']
         self.x_max = sdata[self.image_key]["scale0"].dims['x']
 
-
     def get_patch_input(self,
-                        patch_index: int=None,
+                        patch_index: int = None,
                         patch: Polygon | None = None,
-                        return_agg_segmentation : bool = False):
-
+                        return_agg_segmentation: bool = False):
 
         assert patch_index is not None or patch is not None, "either patch_index XOR patch should be provided"
         assert patch_index is None or patch is None, "either patch_index XOR patch should be provided"
@@ -142,10 +137,9 @@ class StainingTranscriptSegmentation(StainingSegmentation):
 
         bounds = [int(x) for x in patch.bounds]
 
-
         if self.channels_dapi:
             image = self.image.sel(
-                c=self.channels_dapi ,
+                c=self.channels_dapi,
                 x=slice(bounds[0], bounds[2]),
                 y=slice(bounds[1], bounds[3]),
             ).values
@@ -155,26 +149,26 @@ class StainingTranscriptSegmentation(StainingSegmentation):
 
             if self.gaussian_sigma > 0:
                 image = gaussian_filter(image, sigma=self.gaussian_sigma)
-            if self.clip_limit > 0: # https://en.wikipedia.org/wiki/Adaptive_histogram_equalization#CLAHE
+            if self.clip_limit > 0:  # https://en.wikipedia.org/wiki/Adaptive_histogram_equalization#CLAHE
                 image = exposure.equalize_adapthist(image, clip_limit=self.clip_limit)
 
         else:
-            image = np.zeros(( bounds[3] - bounds[1], bounds[2] - bounds[0]), dtype=np.uint16)
+            image = np.zeros((bounds[3] - bounds[1], bounds[2] - bounds[0]), dtype=np.uint16)
 
         patch_df = pd.read_csv(Path(self.patch_dir) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
 
         if return_agg_segmentation:
             assert self.key_cell_consistent is not None, "aggrement segmentation is not loaded/ initialized"
             #t = time()
-            consistent_seg_cell =  self.get_segmentation_crop(
-                                                         bounds = bounds,
-                                                         shape = image.shape,
-                                        key_cell= self.key_cell_consistent_with_nuclei )
-            if self.key_cell_consistent_without_nuclei is not None: # to remove
-                consistent_seg_cell_without_nuclei =  self.get_segmentation_crop(
-                                                         bounds = bounds,
-                                                         shape = image.shape,
-                                        key_cell= self.key_cell_consistent_without_nuclei )
+            consistent_seg_cell = self.get_segmentation_crop(
+                bounds=bounds,
+                shape=image.shape,
+                key_cell=self.key_cell_consistent_with_nuclei)
+            if self.key_cell_consistent_without_nuclei is not None:  # to remove
+                consistent_seg_cell_without_nuclei = self.get_segmentation_crop(
+                    bounds=bounds,
+                    shape=image.shape,
+                    key_cell=self.key_cell_consistent_without_nuclei)
             else:
                 consistent_seg_cell_without_nuclei = None
         else:
@@ -182,18 +176,18 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             consistent_seg_cell_without_nuclei = None
 
         if self.key_nuclei_segmentation is not None:
-            segmentation_nuclei =  self.get_segmentation_crop(
-                                                         bounds = bounds,
-                                                         shape = image.shape,
-                                        key_cell= self.key_nuclei_segmentation )
+            segmentation_nuclei = self.get_segmentation_crop(
+                bounds=bounds,
+                shape=image.shape,
+                key_cell=self.key_nuclei_segmentation)
         else:
             segmentation_nuclei = None
 
-        if self.key_nucleus_consistent_not_in_cell is not None: # to remove
-            segmentation_nuclei_not_in_cell =  self.get_segmentation_crop(
-                                                         bounds = bounds,
-                                                         shape = image.shape,
-                                        key_cell = self.key_nucleus_consistent_not_in_cell )
+        if self.key_nucleus_consistent_not_in_cell is not None:  # to remove
+            segmentation_nuclei_not_in_cell = self.get_segmentation_crop(
+                bounds=bounds,
+                shape=image.shape,
+                key_cell=self.key_nucleus_consistent_not_in_cell)
         else:
             segmentation_nuclei_not_in_cell = None
 
@@ -206,14 +200,14 @@ class StainingTranscriptSegmentation(StainingSegmentation):
                 bounds)
 
     def get_cellbound_staining(self,
-                               patch_index: int,):
+                               patch_index: int, ):
 
         patch = self.sdata[self.shape_patch_key].geometry[patch_index]
         bounds = [int(x) for x in patch.bounds]
         #t = time()
 
         image = self.image.sel(
-            c=self.channels_cellbound ,
+            c=self.channels_cellbound,
             x=slice(bounds[0], bounds[2]),
             y=slice(bounds[1], bounds[3]),
         ).values
@@ -239,15 +233,15 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         :return:
         """
 
-        from rna2seg.dataset_zarr.background import get_rna_density, get_mean_density_per_polygon
+        from rna2seg.dataset_zarr.background import (
+            get_mean_density_per_polygon, get_rna_density)
 
         if list_path_index is None:
             list_path_index = list(range(len(self.sdata[self.shape_patch_key].geometry)))
 
-
         segmentation_shapes = self.sdata[shape_segmentation_key]
         list_density = []
-        for patch_index in tqdm(list_path_index): #tqdm(list_path_index):
+        for patch_index in tqdm(list_path_index):  #tqdm(list_path_index):
             patch = self.sdata[self.shape_patch_key].geometry[patch_index]
             bounds = [int(x) for x in patch.bounds]
             gdf_polygon_segmentation = segmentation_shapes.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
@@ -256,21 +250,21 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             if len(patch_df) == 0 or len(gdf_polygon_segmentation) == 0:
                 continue
 
-            density_mask = get_rna_density(df_crop = patch_df,
-                                           shape = shape,
+            density_mask = get_rna_density(df_crop=patch_df,
+                                           shape=shape,
                                            kernel_size=kernel_size,
-                                           column_x = "x",
-                                           column_y = "y",
-                                           offset_y = bounds[1],
-                                           offset_x = bounds[0],
+                                           column_x="x",
+                                           column_y="y",
+                                           offset_y=bounds[1],
+                                           offset_x=bounds[0],
                                            )
 
             list_density += get_mean_density_per_polygon(
-                gdf_polygon = gdf_polygon_segmentation,
-                density_mask = density_mask,
-                shape = shape,
-                x_trans = bounds[0],
-                y_trans = bounds[1],
+                gdf_polygon=gdf_polygon_segmentation,
+                density_mask=density_mask,
+                shape=shape,
+                x_trans=bounds[0],
+                y_trans=bounds[1],
             )
         density_threshold = np.percentile(list_density, percentile_threshold)
         self.density_threshold = density_threshold
@@ -278,11 +272,11 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         return density_threshold
 
     def get_valid_patch(self,
-                        min_nb_cell = 1,
+                        min_nb_cell=1,
                         list_path_index=None,
-                        shape_segmentation_key = None,
+                        shape_segmentation_key=None,
                         check_border=True,
-                        min_transcripts = 1):
+                        min_transcripts=1):
 
         if shape_segmentation_key is None:
             shape_segmentation_key = self.key_cell_consistent_with_nuclei
@@ -291,13 +285,12 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             list_path_index = list(range(len(self.sdata[self.shape_patch_key].geometry)))
 
         non_empty_list_path_index = []
-        for patch_index in tqdm(list_path_index, file = sys.stdout):
+        for patch_index in tqdm(list_path_index, file=sys.stdout):
             patch = self.sdata[self.shape_patch_key].geometry[patch_index]
             bounds = [int(x) for x in patch.bounds]
             if check_border:
                 if self.y_max < bounds[3] or self.x_max < bounds[2]:
                     continue
-
 
             if min_transcripts > 0:
                 patch_df = pd.read_csv(Path(self.patch_dir) / f'{patch_index}/{SopaFiles.TRANSCRIPTS_FILE}')
@@ -313,30 +306,28 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         return non_empty_list_path_index
 
     def get_patch_annotation(self,
-                             polygon_annotation : gpd.GeoDataFrame |list[Polygon]
+                             polygon_annotation: gpd.GeoDataFrame | list[Polygon]
                              ):
         """
         Get the patch index that intersect with the annotation
         :param polygon_annotation:
         :return: path index that intersect with the annotation and that should be removed from the training set
         """
-        list_polygon_patch = list(self.sdata[self.shape_patch_key].geometry) # can be optimise see read_patches_cells sopa function ?
+        list_polygon_patch = list(
+            self.sdata[self.shape_patch_key].geometry)  # can be optimise see read_patches_cells sopa function ?
 
         if isinstance(polygon_annotation, gpd.GeoDataFrame):
             polygon_annotation = list(polygon_annotation.geometry)
         else:
-            assert isinstance(polygon_annotation, list), "polygon_annotation should be a list of Polygon or a GeoDataFrame"
+            assert isinstance(polygon_annotation,
+                              list), "polygon_annotation should be a list of Polygon or a GeoDataFrame"
 
         intersection_p = compute_polygon_intersection(list_polygon_patch, polygon_annotation)
         return intersection_p[1]
 
-
-
     # function for pre-computing all the flow to train cellpose
 
-
     def get_segmentation_crop(self, bounds, shape, key_cell):
-
 
         assert key_cell in self.sdata.shapes, f"{key_cell} not in sdata.shapes {self.sdata.shapes}"
         cell_segmentation = self.sdata[key_cell].cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
@@ -347,7 +338,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
         possible_matches = self.image.iloc[possible_matches_index]
         precise_matches = possible_matches.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
         """
-        try :
+        try:
             polygons = list(cell_segmentation.geometry)
             ## rasterize the polygon
             # This is typically an affine transformation, but for simplicity, we'll use an identity transformation
@@ -357,7 +348,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
 
             # Define the shape of the output numpy array
             cell_segmentation = rasterize(
-                ((polygons[i], i+1) for i in range(len(polygons))),
+                ((polygons[i], i + 1) for i in range(len(polygons))),
                 out_shape=shape, transform=transform,
                 fill=0, all_touched=True, dtype=np.uint16
             )
@@ -366,62 +357,3 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             assert len(polygons) == 0, "no polygon in the consistent_seg_cell"
             return np.zeros(shape)
         return cell_segmentation
-
-    def precompute_flow(self,
-                        list_path_index: list[int] | None = None,
-                        compute_cellpose: bool = True,
-                        compute_omnipose: bool = False,
-                        key_cell : str = None,
-                        shape  = (1200, 1200)):
-
-        assert compute_cellpose + compute_omnipose >= 1, "at least one of the two should be computed"
-
-        if list_path_index is None:
-            list_path_index = list(range(len(self.sdata[self.shape_patch_key].geometry)))
-
-        for patch_index in tqdm(list_path_index, desc="precompute flow", file = sys.stdout):
-            if patch_index >= len(self.sdata[self.shape_patch_key].geometry):
-                log.warning(f"patch_index {patch_index} is out of bound")
-                continue
-            patch = self.sdata[self.shape_patch_key].geometry[patch_index]
-            bounds = [int(x) for x in patch.bounds]
-
-            if shape is None:
-                image = self.image.sel(
-                    c=self.channels_dapi,
-                    x=slice(bounds[0], bounds[2]),
-                    y=slice(bounds[1], bounds[3]),
-                ).values
-                image = image[0] # todo find a faster way to find the shape
-                shape = image.shape
-
-            full_segmentation = self.get_segmentation_crop(
-                                    bounds = bounds,
-                                    shape = shape,
-                                    key_cell=key_cell)
-
-
-            path_save = Path(self.patch_dir) / f'{patch_index}/{key_cell}'
-            path_save.mkdir(exist_ok=True, parents=True)
-            if shape is None:
-                tifffile.imwrite(path_save / RNA2segFiles.IMAGE, image)
-            if compute_cellpose:
-                flow = labels_to_flows([full_segmentation], files=None,
-                                           device=None, redo_flows=False)
-                np.save(path_save / RNA2segFiles.LABEL_AND_MASK_FLOW, flow[0])
-
-            if compute_omnipose:
-                flow = labels_to_flows_omnipose(labels=[full_segmentation],
-                links=None,
-                files=None,
-                use_gpu=False,
-                device=None,
-                omni=True,
-                redo_flows=True,
-                dim=2)
-                np.save(path_save / RNA2segFiles.LABEL_AND_MASK_FLOW_OMNIPOSE, flow[0])
-            ## save the nb of cell in a file
-            nb_cell = len(np.unique(flow[0][0])) - 1
-            with open(path_save / RNA2segFiles.NB_CELL_FILE, "w") as f:
-                f.write(str(nb_cell))
-
