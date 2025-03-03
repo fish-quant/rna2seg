@@ -26,6 +26,7 @@ Contents
 
    install
    userguide
+   pretrained_model
    module_rna2seg
    
 Support
