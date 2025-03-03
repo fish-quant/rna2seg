@@ -1,3 +1,6 @@
+.. _userguide:
+
+
 User guide
 ---------------
 .. toctree::
@@ -6,3 +9,4 @@ User guide
    notebook/apply_model_on_zarr.ipynb
 
    notebook/train_model_on_zarr.ipynb
+
