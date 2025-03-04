@@ -35,7 +35,6 @@ $ conda create --name rna2seg-env python=3.10
 Then, install RNA2seg and its dependencies:  
 
 ```
-(rna2seg-env) $ pip install instanseg-torch==0.0.5
 (rna2seg-env) $ pip install rna2seg
 ```
 
