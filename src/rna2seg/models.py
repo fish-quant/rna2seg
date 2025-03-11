@@ -109,15 +109,24 @@ class RNAEmbedding(nn.Module):
                                                            device=self.device)
 
         batch_size = shape[0]
-        for b in range(batch_size):
-            if self.radius_rna is None:
-                rna_imgs[b, list_y[b], list_x[b]] = emb[b]
-            else:
-                for i in range(-self.radius_rna, self.radius_rna + 1):
-                    for j in range(-self.radius_rna, self.radius_rna + 1):
-                        list_x = torch.clamp(list_x + i, 0, shape[-1] - 1)
-                        list_y = torch.clamp(list_y + j, 0, shape[-2] - 1)
-                        rna_imgs[b, list_y[b], list_x[b]] = emb[b]
+        # Vectorized approach:
+        if self.radius_rna is None:
+            # Use scatter operation for all batches at once
+            for b in range(batch_size):
+                rna_imgs[b].index_put_((list_y[b], list_x[b]), emb[b])
+        else:
+            # For the radius case, precompute offsets
+            offsets_y, offsets_x = torch.meshgrid(
+                torch.arange(-self.radius_rna, self.radius_rna + 1, device=self.device),
+                torch.arange(-self.radius_rna, self.radius_rna + 1, device=self.device)
+            )
+            offsets = torch.stack([offsets_y.flatten(), offsets_x.flatten()], dim=1)
+            
+            for b in range(batch_size):
+                for offset_y, offset_x in offsets:
+                    y_coords = torch.clamp(list_y[b] + offset_y, 0, shape[-2] - 1)
+                    x_coords = torch.clamp(list_x[b] + offset_x, 0, shape[-1] - 1)
+                    rna_imgs[b].index_put_((y_coords, x_coords), emb[b])
 
         rna_imgs = rna_imgs.permute(0, 3, 1, 2)
 
