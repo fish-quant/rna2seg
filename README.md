@@ -49,7 +49,17 @@ If you have any bug or questions relative to the package, please open an issue
 If you use this library, please cite:
 
 ```
-@article{}
+@article {Defard2025.03.03.641259,
+	author = {Defard, Thomas and Blondel, Alice and Coleon, Anthony and Dias de Melo, Guilherme and Walter, Thomas and Mueller, Florian},
+	title = {RNA2seg: a generalist model for cell segmentation in image-based spatial transcriptomics},
+	elocation-id = {2025.03.03.641259},
+	year = {2025},
+	doi = {10.1101/2025.03.03.641259},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2025/03/11/2025.03.03.641259},
+	eprint = {https://www.biorxiv.org/content/early/2025/03/11/2025.03.03.641259.full.pdf},
+	journal = {bioRxiv}
+}
 ```
 
 ## Datasets
