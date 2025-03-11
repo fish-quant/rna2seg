@@ -138,7 +138,7 @@ def train_one_epoch(
                                         optimizer=optimizer,
                                         zeroing_dapi=zeroing_dapi,
                                         path_save_model=path_save_model,
-                                        save_ouptut=len(training_loader) % max(i_train, 1) <= print_loss_every,
+                                        save_output=len(training_loader) % max(i_train, 1) <= print_loss_every,
                                         i_test=i_test
                                         )
 
@@ -214,7 +214,7 @@ def _run(dict_result,
          optimizer,
          zeroing_dapi,
          path_save_model=None,
-         save_ouptut=False,
+         save_output=False,
          i_test=None):
     label, mask_gradient, img_cellbound, dapi, rna_img = (
         dict_result["mask_flow"], dict_result["mask_gradient"], dict_result["img_cellbound"],
@@ -272,14 +272,13 @@ def _run(dict_result,
         mask_gradient=mask_gradient
     )
 
-    if path_save_model is not None and save_ouptut:  # (len(training_loader) % max(i_train, 1) <= print_loss_every):
+    if path_save_model is not None and save_output:  # (len(training_loader) % max(i_train, 1) <= print_loss_every):
         path_save_plot_epoch = Path(path_save_model) / f"epoch_{epoch_index}"
         path_save_plot_epoch.mkdir(exist_ok=True, parents=True)
         ##
         imgs = imgs.to("cpu")
         label = label.to("cpu")
         mask_gradient = mask_gradient.to("cpu")
-        img_cellbound = img_cellbound.to("cpu")
         img_cellbound = img_cellbound.to("cpu")
         output = output.to("cpu")
         patch_index = dict_result["patch_index"]
