@@ -63,17 +63,3 @@ class ChannelInvariantUNet(nn.Module):
 
         return x.float()
 
-
-if __name__ == "__main__":
-    ci_unet = ChannelInvariantUNet(out_channels=6,
-                                   layers=[256, 128, 64, 32],
-                                   norm="BATCH",
-                                   act="ReLu",
-                                   aggregation="concat")
-
-    num_params = sum(p.numel() for p in ci_unet.parameters())
-    print(f"Number of parameters in C_unet: {num_params}")
-
-    print(ci_unet(torch.randn(1, 3, 600, 600)).shape)
-
-    print(ci_unet(torch.randn(10, 3, 600, 600)).shape)

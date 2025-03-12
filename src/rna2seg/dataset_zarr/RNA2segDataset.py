@@ -178,13 +178,13 @@ def rna2img(df_crop, dict_gene_value: dict | None,
         assert len(list_coord_value) == 0
     else:
         if not addition_mode:
-            #raise NotImplementedError("not using addition mode is deprecated")
+            # raise NotImplementedError("not using addition mode is deprecated")
             img[list_y, list_x] = list_coord_value
         else:
             for i, (y, x) in enumerate(zip(list_y, list_x)):
                 img[y, x] += list_coord_value[i]
 
-    ## add max filter with scipy
+    # add max filter with scipy
     if max_filter_size > 0:
         img = ndi.maximum_filter(img, size=(max_filter_size, max_filter_size, 1))
 
@@ -280,16 +280,16 @@ def remove_cell_in_background(agreement_segmentation,
         corrected_agreement_segmentation_without_nuclei > 0] += max_indice_cell
     max_indice_cell = np.max(corrected_agreement_segmentation_without_nuclei)
     corrected_segmentation_nuclei_not_in_cell[corrected_segmentation_nuclei_not_in_cell > 0] += max_indice_cell
-    #max_indice_cell = np.max(segmentation_nuclei_not_in_cell)
+    # max_indice_cell = np.max(segmentation_nuclei_not_in_cell)
 
     corrected_agreement_segmentation = agreement_segmentation + corrected_agreement_segmentation_without_nuclei + corrected_segmentation_nuclei_not_in_cell
-    #mask_gradient = (corrected_agreement_segmentation > 0).astype(int) + (correct_background>0).astype(int)
+    # mask_gradient = (corrected_agreement_segmentation > 0).astype(int) + (correct_background>0).astype(int)
     mask_gradient = ((corrected_agreement_segmentation > 0).astype(int) +
                      (corrected_agreement_segmentation_without_nuclei > 0).astype(int) +
                      (corrected_segmentation_nuclei_not_in_cell > 0).astype(int) * 3 +
                      (correct_background > 0).astype(int))
 
-    #print(f"Time to remove cell in background: {time() - t:.6f}s")
+    # print(f"Time to remove cell in background: {time() - t:.6f}s")
 
     return mask_gradient, corrected_agreement_segmentation, correct_background  #, corrected_agreement_segmentation_without_nuclei
 
@@ -332,26 +332,26 @@ class RNA2segDataset(Dataset):
                  addition_mode=True,
                  min_transcripts: int = 1,
 
-                 #### for rna_encoding
+                 # for rna_encoding
                  return_df=False,
                  gene2index=None,
                  augmentation_img=False,
 
-                 ### save flow
+                 # save flow
                  recompute_flow=True,
 
-                 ## for testing
+                 # for testing
                  test_return_background=False,
 
-                 ###  for save cache
+                 # for save cache
 
                  # path_cache
                  patch_dir: Path | str | None = None,  # Transcripts
                  experiment_name='input_target_rna2seg',  # for dev only
                  use_cache=False,
-                 ## IMG AUGMENTATION
+                 # IMG AUGMENTATION
 
-                 ### optional for testing
+                 # optional for testing
                  shape_patch_key=None,
 
                  ):
@@ -417,7 +417,7 @@ class RNA2segDataset(Dataset):
             print(f'default shape_patch_key set to {shape_patch_key}')
         assert shape_patch_key in sdata, f"shape_patch_key {shape_patch_key} not in sdata, set the correct shape_patch_key"
 
-        ### for compatibility with the sopa 2
+        # for compatibility with the sopa 2
         sdata[SopaKeys.PATCHES] = sdata[shape_patch_key]
 
         self.key_nuclei_segmentation = key_nuclei_segmentation
@@ -488,7 +488,7 @@ class RNA2segDataset(Dataset):
         self.experiment_name = experiment_name
         self.patch_dir = patch_dir
 
-        ######" data augmentation ######
+        # data augmentation ######
         self.cellbound_transform = cellbound_transform
         self.transfrom_augment_resize = A.Compose([
             A.RandomScale(scale_limit=(-0.5, 0.5), interpolation=1, p=0.5, always_apply=None),
@@ -496,7 +496,7 @@ class RNA2segDataset(Dataset):
             A.CropNonEmptyMaskIfExists(height=self.resize,
                                        width=self.resize,
                                        p=1.0),
-            #A.RandomResizedCrop(size=(self.resize , self.resize) , scale=(0.5, 1), ratio=(0.75, 1.33), p=0.5)
+            # A.RandomResizedCrop(size=(self.resize , self.resize) , scale=(0.5, 1), ratio=(0.75, 1.33), p=0.5)
         ])
 
         self.training_mode = training_mode
@@ -629,7 +629,6 @@ class RNA2segDataset(Dataset):
         dict_result = {}
         dict_result["img_cellbound"] = torch.tensor(img_cellbound)
         dict_result["dapi"] = torch.tensor(dapi).clone().detach()
-        dict_result["rna_img"] = torch.tensor(rna_img).clone().detach()
 
         dict_result["mask_flow"] = torch.tensor(mask_flow.astype(np.float32))
         dict_result["mask_gradient"] = torch.tensor(mask_gradient.astype(np.float32))
@@ -647,6 +646,8 @@ class RNA2segDataset(Dataset):
         if self.return_df:
             dict_result["list_gene"] = torch.tensor(list_gene)
             dict_result["array_coord"] = torch.tensor(array_coord)
+        else:
+            dict_result["rna_img"] = torch.tensor(rna_img)
 
         return dict_result
 
@@ -829,7 +830,7 @@ class RNA2segDataset(Dataset):
             raise NotImplementedError("transform should be provided")
         rna2seg_input = np.transpose(img_input, (2, 0, 1))
 
-        ################## save in a cache for future use ##################
+        # save in a cache for future use ##################
         dapi = rna2seg_input[:1]
         rna_img = rna2seg_input[1:]
 
@@ -842,7 +843,7 @@ class RNA2segDataset(Dataset):
             tifffile.imwrite(folder_to_save / RNA2segFiles.DAPI, dapi)
             tifffile.imwrite(folder_to_save / RNA2segFiles.RNA_img, rna_img)
 
-            ## save bounds as json
+            # save bounds as json
             with open(folder_to_save / RNA2segFiles.BOUNDS_FILE, 'w') as f:
                 json.dump(bounds, f)
 

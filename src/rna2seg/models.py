@@ -281,7 +281,8 @@ class RNA2seg(nn.Module):
 
         dapi = dapi.to(self.device)
         img_cellbound = img_cellbound.to(self.device)
-        rna_img = rna_img.to(self.device)
+        if rna_img is not None:
+            rna_img = rna_img.to(self.device)
         assert list_gene is not None or rna_img is not None, "list_gene or rna_img must be provided"
         assert list_gene is None or rna_img is None, \
             "list_gene to encode rna and rna_img using pre-encoded RNA cannot be provided at the same time"

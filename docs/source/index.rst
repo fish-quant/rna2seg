@@ -41,14 +41,17 @@ If you use this library, please be sure to cite:
 
 .. code-block:: text
 
-   @article{
-       author = {Thomas Defard, Alice Blondel, Anthony Coleon, Guilherme Dias de Melo, Thomas Walter, Florian Mueller},
-       title = {RNA2seg: a generalist model for cell segmentation in image-based spatial transcriptomics},
-       journal = {Journal Name},
-       year = {2025},
-       volume = {50},
-       pages = {123-130}
-   }
+   @article {Defard2025.03.03.641259,
+	author = {Defard, Thomas and Blondel, Alice and Coleon, Anthony and Dias de Melo, Guilherme and Walter, Thomas and Mueller, Florian},
+	title = {RNA2seg: a generalist model for cell segmentation in image-based spatial transcriptomics},
+	elocation-id = {2025.03.03.641259},
+	year = {2025},
+	doi = {10.1101/2025.03.03.641259},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2025/03/11/2025.03.03.641259},
+	eprint = {https://www.biorxiv.org/content/early/2025/03/11/2025.03.03.641259.full.pdf},
+	journal = {bioRxiv}
+}
 
 Indices and tables
 ==================

@@ -44,7 +44,8 @@ import pandas as pd
 import spatialdata as sd
 
 from rna2seg.dataset_zarr.patches import create_patch_rna2seg
-
+import torch
+import numpy as np
 
 
 
@@ -164,8 +165,74 @@ def test_create_patch_rna2seg():
 
     assert len(cells) == 87
 
+def test_rna_emb():
 
-# add test for save_shapes2zarr(dataset, segmentation_shape_name)
+
+    import albumentations as A
+
+    from rna2seg.dataset_zarr import RNA2segDataset
+
+    transform_resize = A.Compose([
+        A.Resize(width=512, height=512, interpolation=cv2.INTER_NEAREST),
+    ])
+
+    sdata = sd.read_zarr(VariableTest.merfish_zarr_path)
+
+    list_gene = list(sdata['transcripts'].gene.unique().compute())
+    gene2index = {gene: i+1 for i, gene in enumerate(list_gene)}
+
+
+    dataset = RNA2segDataset(
+            sdata=sdata,
+            channels_dapi=VariableTest.channels_dapi,
+            channels_cellbound=VariableTest.channels_cellbound,
+            patch_width=VariableTest.patch_width,
+            patch_overlap=VariableTest.patch_overlap,
+            gene_column=VariableTest.gene_column_name,
+            transform_resize=transform_resize,
+            patch_dir=VariableTest.folder_patch_rna2seg,
+            return_df=True,
+            gene2index=gene2index
+        )
+
+    assert torch.sum(dataset[5]['array_coord']) == 21690077
+    assert torch.sum(dataset[5]['list_gene']) == 10846326
+
+    from rna2seg.models import RNA2seg
+
+    device = "cpu"
+
+    torch.manual_seed(42)
+    import numpy as np
+    np.random.seed(42)
+
+    rna2seg = RNA2seg(
+        device,
+        net='unet',
+        flow_threshold=0.9,
+        cellbound_flow_threshold=0.4,
+        pretrained_model="default_pretrained",
+        gene2index=gene2index
+    )
+
+    assert torch.sum(rna2seg.rna_embedding.embedding.weight).item() == 55.967620849609375
+
+    shape = (1, 512, 512)
+    array_coord = dataset[5]['array_coord'][None, :]
+    list_gene = dataset[5]['list_gene'][None, :]
+
+    rna2seg.rna_embedding.gaussian_kernel_size = 0
+    rna2seg.rna_embedding.radius_rna = None
+
+    img = rna2seg.rna_embedding(shape, list_gene[:, :400], array_coord[:, :400]).detach().numpy()
+
+    rna2seg()
+
+    assert float(np.sum(img)) == 51.88897705078125
+
+
+
+
 
 
 @pytest.mark.run(order=4)

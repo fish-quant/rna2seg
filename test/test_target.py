@@ -1,10 +1,14 @@
+
+
+
 import shutil
 import sys
+
+sys.path =['/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pydev', '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/third_party/thriftpy', '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pydev', '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pycharm_display', '/home/tom/anaconda3/envs/rna2seg-env/lib/python310.zip', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10/lib-dynload', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10/site-packages', '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pycharm_matplotlib_backend', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10/site-packages/setuptools/_vendor', '/home/tom/Bureau/phd/rna_seg2paper', '/home/tom/Bureau/phd/rna_seg2paper/rna_seg_pkg/src']
+
 from pathlib import Path
 
-import albumentations as A
-import cv2
-import numpy as np
+
 #from _constant_path import PathTest
 import pytest
 import spatialdata as sd
@@ -39,12 +43,19 @@ def clean():
     patch_width = VariableTest.patch_width
     patch_overlap = VariableTest.patch_overlap
     key_shape = f"sopa_patches_rna2seg_{patch_width}_{patch_overlap}"
-    list_shape = [VariableTest.key_cell_consistent, VariableTest.key_nucleus_consistent]
+    list_shape = [VariableTest.key_cell_consistent + "_with_nuclei",
+                  VariableTest.key_nucleus_consistent + "_in_cell",
+                  VariableTest.key_nucleus_consistent + "_not_in_cell",
+                  VariableTest.key_cell_consistent + "_without_nuclei",
+                  ]
+
     list_folder_to_remove = [VariableTest.merfish_zarr_path / f".{key_shape}",
                              VariableTest.folder_patch_rna2seg / f".sopa_cache",
                              VariableTest.merfish_zarr_path / f"shapes/{list_shape[0]}",
                              VariableTest.merfish_zarr_path / f"shapes/{list_shape[1]}",
-                            VariableTest.merfish_zarr_path / f"shapes/sopa_patches_rna2seg_1200_150",
+                             VariableTest.merfish_zarr_path / f"shapes/{list_shape[2]}",
+                             VariableTest.merfish_zarr_path / f"shapes/{list_shape[3]}",
+                             VariableTest.merfish_zarr_path / f"shapes/sopa_patches_rna2seg_1200_150",
                              ]
     for folder in list_folder_to_remove:
         if folder.exists():
@@ -58,7 +69,7 @@ def test_clean_before():
 
 @pytest.mark.run(order=2)
 def test_consistent():
-    sdata = sd.read_zarr("/media/tom/Transcend/open_merfish/test_spatial_data/for_test/sub_mouse_ileum.zarr")
+    sdata = sd.read_zarr(VariableTest.merfish_zarr_path)
 
     sdata, _ = compute_consistent_cell(
         sdata=sdata,

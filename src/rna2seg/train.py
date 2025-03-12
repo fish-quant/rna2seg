@@ -280,7 +280,6 @@ def _run(dict_result,
         label = label.to("cpu")
         mask_gradient = mask_gradient.to("cpu")
         img_cellbound = img_cellbound.to("cpu")
-        img_cellbound = img_cellbound.to("cpu")
         output = output.to("cpu")
         patch_index = dict_result["patch_index"]
         with open(path_save_plot_epoch / f"patch_index{i_test}.txt", "w") as f:
