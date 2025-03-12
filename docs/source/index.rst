@@ -15,7 +15,7 @@ RNA2seg addresses this issue by integrating an **arbitrary number of staining ch
 
 Check out the :doc:`install` section for further information about how to install the package.
 
-realesed version and code
+released version and code
 ------------
 the package code is at  https://github.com/fish-quant/rna2seg
 
