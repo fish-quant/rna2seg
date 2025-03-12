@@ -1,21 +1,8 @@
 import sys
 
 
-sys.path = ['/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pydev',
-            '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/third_party/thriftpy',
-            '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pydev',
-            '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pycharm_display',
-            '/home/tom/anaconda3/envs/test_rna2seg4/lib/python310.zip',
-            '/home/tom/anaconda3/envs/test_rna2seg4/lib/python3.10',
-            '/home/tom/anaconda3/envs/test_rna2seg4/lib/python3.10/lib-dynload',
-            '',
-            '/home/tom/anaconda3/envs/test_rna2seg4/lib/python3.10/site-packages',
-            '/home/tom/Bureau/phd/rna_seg2paper/rna_seg_pkg/src',
-            '/home/tom/Bureau/spatialdata-main/src',
-            '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pycharm_matplotlib_backend',
-            '/home/tom/anaconda3/envs/test_rna2seg4/lib/python3.10/site-packages/setuptools/_vendor',
-            '/home/tom/Bureau/phd/rna_seg2paper',
-            '/home/tom/Bureau/phd/rna_seg2paper/rna_seg_pkg/src']
+sys.path =['/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pydev', '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/third_party/thriftpy', '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pydev', '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pycharm_display', '/home/tom/anaconda3/envs/rna2seg-env/lib/python310.zip', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10/lib-dynload', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10/site-packages', '/home/tom/Bureau/phd/rna_seg2paper/rna_seg_pkg/src', '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pycharm_matplotlib_backend', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10/site-packages/setuptools/_vendor', '/home/tom/Bureau/phd/rna_seg2paper', '/home/tom/Bureau/phd/rna_seg2paper/rna_seg_pkg/src']
+
 
 import warnings
 
@@ -48,6 +35,8 @@ import torch
 import numpy as np
 
 
+# ADD YOUR PATH
+MERFISH_ZARR_PATH = Path("/media/tom/Transcend/open_merfish/test_spatial_data/test005/sub_mouse_ileum.zarr")
 
 
 class VariableTest:
@@ -56,7 +45,7 @@ class VariableTest:
     patch_width = 1200
     patch_overlap = 150
     min_transcripts_per_patch = 0
-    merfish_zarr_path = Path("/media/tom/Transcend/open_merfish/test_spatial_data/test005/sub_mouse_ileum.zarr")
+    merfish_zarr_path = MERFISH_ZARR_PATH
     folder_patch_rna2seg = Path(merfish_zarr_path) / f".rna2seg_{patch_width}_{patch_overlap}"
 
     channels_dapi = ["DAPI"]
@@ -118,7 +107,7 @@ def test_create_patch_rna2seg():
 
 # check rna2seg dataset
 @pytest.mark.run(order=3)
-def test_create_patch_rna2seg():
+def test_run_pretrained_rna2seg():
 
 
     import albumentations as A
@@ -165,12 +154,43 @@ def test_create_patch_rna2seg():
 
     assert len(cells) == 87
 
-def test_rna_emb():
 
+    rna2seg = RNA2seg(
+        device,
+        net='unet',
+        flow_threshold=0.9,
+        cellbound_flow_threshold=0.4,
+        pretrained_model="brain_hamster"
+    )
+
+    input_dict = dataset[6]
+    flow, cellprob, masks_pred, cells = rna2seg.run(
+        path_temp_save=VariableTest.folder_patch_rna2seg,
+        input_dict=input_dict
+    )
+
+    assert len(cells) == 108
+
+
+def test_rna_emb():
+    import importlib
+    import rna2seg
+    import rna2seg.models as models
+    import rna2seg.dataset_zarr as dataset_zarr
+    #importlib.reload(rna2seg)
+    #importlib.reload(models)
+    #importlib.reload(dataset_zarr)
 
     import albumentations as A
 
     from rna2seg.dataset_zarr import RNA2segDataset
+    from rna2seg.models import RNA2seg
+
+
+    torch.manual_seed(42)
+    import numpy as np
+    np.random.seed(42)
+
 
     transform_resize = A.Compose([
         A.Resize(width=512, height=512, interpolation=cv2.INTER_NEAREST),
@@ -180,7 +200,6 @@ def test_rna_emb():
 
     list_gene = list(sdata['transcripts'].gene.unique().compute())
     gene2index = {gene: i+1 for i, gene in enumerate(list_gene)}
-
 
     dataset = RNA2segDataset(
             sdata=sdata,
@@ -198,24 +217,25 @@ def test_rna_emb():
     assert torch.sum(dataset[5]['array_coord']) == 21690077
     assert torch.sum(dataset[5]['list_gene']) == 10846326
 
-    from rna2seg.models import RNA2seg
 
     device = "cpu"
-
-    torch.manual_seed(42)
-    import numpy as np
-    np.random.seed(42)
 
     rna2seg = RNA2seg(
         device,
         net='unet',
         flow_threshold=0.9,
         cellbound_flow_threshold=0.4,
-        pretrained_model="default_pretrained",
+        pretrained_model=None,
         gene2index=gene2index
     )
+    w_tensor = torch.zeros(rna2seg.rna_embedding.embedding.weight.shape[0],
+                              rna2seg.rna_embedding.embedding.weight.shape[1])
+    for i in range(rna2seg.rna_embedding.embedding.weight.shape[0]):
+        for j in range(rna2seg.rna_embedding.embedding.weight.shape[1]):
+            w_tensor[i, j] = ((-1)**j) * (i+j) / (j+1)
 
-    assert torch.sum(rna2seg.rna_embedding.embedding.weight).item() == 55.967620849609375
+    rna2seg.rna_embedding.embedding.weight.data = w_tensor
+    assert torch.sum(rna2seg.rna_embedding.embedding.weight).item() == 126362.6640625
 
     shape = (1, 512, 512)
     array_coord = dataset[5]['array_coord'][None, :]
@@ -226,12 +246,20 @@ def test_rna_emb():
 
     img = rna2seg.rna_embedding(shape, list_gene[:, :400], array_coord[:, :400]).detach().numpy()
 
-    rna2seg()
+    assert float(np.sum(img)) == 70359.828125
 
-    assert float(np.sum(img)) == 51.88897705078125
+    rna2seg.rna_embedding.radius_rna = 2
 
+    img = rna2seg.rna_embedding(shape, list_gene[:, :400], array_coord[:, :400]).detach().numpy()
 
+    assert float(np.sum(img)) == 1534523.625
 
+    input_dict = dataset[5]
+    flow, cellprob, masks_pred, cells = rna2seg.run(
+        path_temp_save=VariableTest.folder_patch_rna2seg,
+        input_dict=input_dict
+    )
+    assert flow.shape == (1, 2, 512, 512)
 
 
 

@@ -79,13 +79,6 @@ def create_patch_rna2seg(sdata: sd.SpatialData,
                             image_key=image_key,
                             key_added=shape_patch_key)
 
-    """sopa.make_transcript_patches(sdata,
-                                 patch_width=200,
-                                 patch_overlap=50,
-                                 points_key=points_key,
-                                 min_points_per_patch=400,
-                                 )"""
-
     csv_name = SopaFiles.TRANSCRIPTS_FILE
     # save a 'scaled' rna-csv  for each patch in the folder
     tp = TranscriptPatchesWithScale(
@@ -108,31 +101,6 @@ def create_patch_rna2seg(sdata: sd.SpatialData,
         image_key,
         shape_patch_key,
     )
-
-    ##
-    """
-    csv_name = SopaFiles.TRANSCRIPTS_FILE
-    # save a 'scaled' rna-csv  for each patch in the folder
-    tp = TranscriptPatches_with_scale(
-        sdata=sdata,
-        points_key=points_key,
-        patch_width=patch_width,
-        patch_overlap=patch_overlap,
-        shape_patch_key=shape_patch_key,
-        df=sdata[points_key],
-        config_name="",
-        csv_name=csv_name,
-        min_transcripts_per_patch=min_transcripts_per_patch,
-        cache_dir = folder_patch_rna2seg2,
-
-    )
-
-    tp.write_image_scale(
-        image_key,
-        shape_patch_key,
-        intrinsics=False
-    )
-    """
 
 
 class TranscriptPatchesWithScale(OnDiskTranscriptPatches):

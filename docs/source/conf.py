@@ -9,7 +9,7 @@
 project = 'RNA2seg'
 copyright = '2025, Thomas Defard, Alice Blondel'
 author = 'Thomas Defard, Alice Blondel'
-release = '0.0.5'
+release = '0.0.7'
 
 html_logo = '../../img/mini_logo.svg'
 

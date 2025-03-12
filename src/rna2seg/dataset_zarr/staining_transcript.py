@@ -241,7 +241,7 @@ class StainingTranscriptSegmentation(StainingSegmentation):
 
         segmentation_shapes = self.sdata[shape_segmentation_key]
         list_density = []
-        for patch_index in tqdm(list_path_index):  #tqdm(list_path_index):
+        for patch_index in tqdm(list_path_index):
             patch = self.sdata[self.shape_patch_key].geometry[patch_index]
             bounds = [int(x) for x in patch.bounds]
             gdf_polygon_segmentation = segmentation_shapes.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]

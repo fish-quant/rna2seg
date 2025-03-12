@@ -8,7 +8,6 @@ from spatialdata.transformations import get_transformation
 from tqdm import tqdm
 
 
-# todo complete this fonction and add it into the compute_consistent_cell function
 def compute_polygon_intersection(list_polygon_patch, list_polygon_annotation):
     tree = shapely.STRtree(list_polygon_patch)
     conflicts = tree.query(list_polygon_annotation, predicate="intersects")
@@ -26,7 +25,6 @@ def compute_consistent_cell(
         threshold_intersection_intersect: float = 0.05,
         accepted_nb_nuclei_per_cell: set = {1},
         max_cell_nb_intersecting_nuclei: int = 1,
-        save_intermediate_shape: bool = False,
         key_unconsistent_cell: str | None = None,
 ):
     """
@@ -66,7 +64,7 @@ def compute_consistent_cell(
     list_nuclei = list(sdata[key_shape_nuclei_seg].geometry)  # can be optimise ssee read_patches_cells sopa function ?
 
     (cell_consistent_with_nuclei, nuclei_consistent_with_cell, cell_consistent_without_nuclei,
-     nuclei_consistent_not_in_cell, list_polygon_cell_unconsistent, dict_polygon_index) = calculate_consistent_cells(
+     nuclei_consistent_not_in_cell, list_polygon_cell_unconsistent, dict_polygon_index) = _calculate_consistent_cells(
         list_polygon_cell=list_cell,
         list_polygon_nuclei=list_nuclei,
         threshold_intersection_contain=threshold_intersection_contain,
@@ -135,13 +133,14 @@ def compute_consistent_cell(
     return sdata, dict_polygon_index
 
 
-def calculate_consistent_cells(list_polygon_cell,
+def _calculate_consistent_cells(list_polygon_cell,
                                list_polygon_nuclei,
                                threshold_intersection_contain=0.95,
                                accepted_nb_nuclei_per_cell=None,
                                threshold_intersection_intersect=None,
                                max_cell_nb_intersecting_nuclei=1,
                                ):
+
     assert 0 not in accepted_nb_nuclei_per_cell, "0 is not an accepted number of nuclei per cell"
     if accepted_nb_nuclei_per_cell is None:
         accepted_nb_nuclei_per_cell = {1}

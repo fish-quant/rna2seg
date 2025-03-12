@@ -1,10 +1,5 @@
 
 
-
-
-
-#from sopa._constants import SopaFiles
-
 class RNA2segFiles:
     NB_CELL_FILE = "nb_cell.txt"
     RNA2SEG_INPUT = "input_rna2seg.tif"
@@ -15,12 +10,9 @@ class RNA2segFiles:
     CELLBOUND = "img_cellbound.tif"
     BACKGROUND = "background.tif"
     BOUNDS_FILE = "bounds.json"
-    TRANSCRIPTS_FILE = 'transcripts.csv' #SopaFiles.TRANSCRIPTS_FILE
+    TRANSCRIPTS_FILE = 'transcripts.csv' # SopaFiles.TRANSCRIPTS_FILE
     LIST_GENE = 'list_gene.npy'
     ARRAY_COORD = 'array_coord.npy'
     SEGMENTATION_NUCLEI = 'seg_nuc.tif'
     DAPI = 'DAPI.tif'
     RNA_img = 'RNA_img.tif'
-
-
-

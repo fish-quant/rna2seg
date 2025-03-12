@@ -15,8 +15,16 @@ RNA2seg addresses this issue by integrating an **arbitrary number of staining ch
 
 Check out the :doc:`install` section for further information about how to install the package.
 
+realesed version and code
+------------
+the package code is at  https://github.com/fish-quant/rna2seg
+
+12/03/25 RNA2seg 0.0.7 :
+ - fix RNA embbeding bug
+ - add pretrained model for brain data
+
 Contents
-===================================
+------------
 
 .. toctree::
    :maxdepth: 2
@@ -30,12 +38,12 @@ Contents
    module_rna2seg
    
 Support
-==================
+------------
 
 If you have any questions relative to the package, please open an issue on  `GitHub <https://github.com/fish-quant/rna2seg>`_.
 
 Citation
-==================
+------------
 
 If you use this library, please be sure to cite:
 
@@ -54,8 +62,7 @@ If you use this library, please be sure to cite:
 }
 
 Indices and tables
-==================
-
+===================================
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`

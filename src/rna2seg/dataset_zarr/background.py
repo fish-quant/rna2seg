@@ -76,24 +76,6 @@ def get_mean_density_per_polygon(gdf_polygon: gpd.GeoDataFrame,
     return list_density
 
 
-def get_density_threshold(list_density,  # function not used
-                          percentile_threshold=1):
-
-    """
-        Get the density threshold
-        Args:
-            list_density: list of density
-            percentile_threshold:  use as example :  np.percentile(all_list_density, percentile_threshold = 7)
-                    which means that the 7 percentile of the density distribution of the instance object is
-                    used as threshold
-        Returns:
-            density_threshold: density threshold
-        """
-
-    density_threshold = np.percentile(list_density, percentile_threshold)
-    return density_threshold
-
-
 def get_background_mask(density_threshold: float,
                         df_crop,
                         shape,

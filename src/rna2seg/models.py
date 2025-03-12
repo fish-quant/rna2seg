@@ -1,3 +1,4 @@
+
 import dask
 
 dask.config.set({'dataframe.query-planning': False})
@@ -215,7 +216,6 @@ class RNA2seg(nn.Module):
 
         self.net_archi = net
         self.n_inv_chan = n_inv_chan
-        self._set_net(nbase)
 
         if gene2index is not None:
             assert 0 not in gene2index.values(), "gene2index should not contain 0 as value"
@@ -231,8 +231,13 @@ class RNA2seg(nn.Module):
                 radius_rna=1,
             )
             self.rna_embedding = self.rna_embedding.to(device)
+            self.nb_rna_channel = self.embedding_dim
         else:
             self.rna_embedding = None
+            assert nb_rna_channel is not None, "rna_channel must be provided"
+            self.nb_rna_channel = nb_rna_channel
+
+        self._set_net(nbase)
         self.net = self.net.to(device)
 
     def forward(
@@ -417,10 +422,12 @@ class RNA2seg(nn.Module):
         if dapi.dim() == 3:
             dapi = dapi.unsqueeze(0)
             img_cellbound = img_cellbound.unsqueeze(0)
-            rna_img = rna_img.unsqueeze(0)
             if list_gene is not None:
                 list_gene = list_gene.unsqueeze(0)
                 array_coord = array_coord.unsqueeze(0)
+            else:
+                rna_img = rna_img.unsqueeze(0)
+
 
         # Forward
         res = self.forward(list_gene=list_gene,
@@ -524,9 +531,15 @@ class RNA2seg(nn.Module):
         self.net = self.net.to(self.device)
         if self.pretrained_model == "default_pretrained":
             from huggingface_hub import snapshot_download
-            print("Downloading pretrained model from huggingface")
             path = snapshot_download(repo_id="aliceblondel/RNA2seg")
+            print(f"Downloading pretrained model from huggingface {path}")
             self.pretrained_model = Path(path) / "rna2seg.pt"
+
+        if self.pretrained_model == "brain_hamster":
+            from huggingface_hub import snapshot_download
+            path = snapshot_download(repo_id="faraone75/rna2seg_hamster_brain")
+            print(f"Downloading pretrained model from huggingface {path}")
+            self.pretrained_model = Path(path) / "brain_hamster.pt"
 
         if self.pretrained_model is not None:
             assert os.path.exists(self.pretrained_model), f"Pretrained model not found at : {self.pretrained_model}"

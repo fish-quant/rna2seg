@@ -18,6 +18,9 @@ from tqdm import tqdm
 from rna2seg.dataset_zarr import (RNA2segDataset, compute_consistent_cell,
                                   custom_collate_fn)
 
+# ADD YOUR PATH
+MERFISH_ZARR_PATH = Path("/media/tom/Transcend/open_merfish/test_spatial_data/test005/sub_mouse_ileum.zarr")
+
 
 class VariableTest:
     image_key = "staining_z3"
@@ -25,7 +28,7 @@ class VariableTest:
     patch_width = 1200
     patch_overlap = 50
     min_transcripts_per_patch = 0
-    merfish_zarr_path = Path("/media/tom/Transcend/open_merfish/test_spatial_data/for_test/mouse_ileum.zarr")
+    merfish_zarr_path = MERFISH_ZARR_PATH
     folder_patch_rna2seg = Path(merfish_zarr_path) / f".rna2seg_{patch_width}_{patch_overlap}"
 
     channels_dapi = ["DAPI"]
