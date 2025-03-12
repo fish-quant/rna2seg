@@ -25,6 +25,13 @@ RNA2seg is designed for researchers working with spatial transcriptomics data wh
 
 Check RNA2seg's [documentation](https://rna2seg.readthedocs.io/en/latest/) to get started. It contains installation explanations and tutorials.
 
+## new released 
+
+12/03/25 RNA2seg 0.0.7 :
+ - add pretrained model for brain data
+ - fix RNA embbeding bug
+
+
 ## Installation
 
 It is recommended to create a virtual environment before installing RNA2seg to isolate dependencies:  
