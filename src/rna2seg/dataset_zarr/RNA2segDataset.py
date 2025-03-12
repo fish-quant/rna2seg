@@ -467,7 +467,8 @@ class RNA2segDataset(Dataset):
 
         self.remove_cell_in_background_threshold = remove_cell_in_background_threshold
 
-        ## for releoding the dataset
+        # for reloding the dataset
+
         self.remove_nucleus_seg_from_bg = remove_nucleus_seg_from_bg
 
         self.addition_mode = addition_mode
@@ -489,6 +490,7 @@ class RNA2segDataset(Dataset):
         self.patch_dir = patch_dir
 
         # data augmentation ######
+
         self.cellbound_transform = cellbound_transform
         self.transfrom_augment_resize = A.Compose([
             A.RandomScale(scale_limit=(-0.5, 0.5), interpolation=1, p=0.5, always_apply=None),
@@ -555,12 +557,13 @@ class RNA2segDataset(Dataset):
             - "bounds": List defining the spatial boundaries of the patch.
             - "segmentation_nuclei" (optional): Tensor representing the nuclear segmentation mask if available.
             - "list_gene" (optional): Tensor containing the list of detected genes if `return_df` is enabled.
-            - "array_coord" (optional): Tensor containing spatial coordinates of detected transcripts if `return_df` is enabled.
+            - "array_coord" (optional): Tensor containing spatial coordinates of detected transcripts
+             if `return_df` is enabled.
         """
 
         patch_index = self.list_patch_index[idx]
 
-        ############# check if cache exist ###################
+        # check if cache exist ###################
         compute_all_patch = True
 
         if self.use_cache:
@@ -598,20 +601,20 @@ class RNA2segDataset(Dataset):
 
                 compute_all_patch = False
 
-            except  Exception as e:
+            except Exception as e:
 
                 print(f"No cache found for patch {patch_index} Recomputing the patch {patch_index}")
 
         if compute_all_patch:
             dapi, rna_img, img_cellbound, mask_flow, mask_gradient, background, list_gene, \
                 array_coord, segmentation_nuclei, bounds = self._get_patch_input(
-                patch_index=patch_index,
-            )
+                    patch_index=patch_index,
+                )
 
-        ############### data augmentation ###################################
+        # data augmentation ###################################
 
         if self.augmentation_img:
-            ## hard coded value
+            # hard coded value
             self.prob_rotate_resize = 0.5
             self.prob_transfrom_augment_resize = 0.75
 
@@ -964,7 +967,7 @@ class RNA2segDataset(Dataset):
             list_path_index_theshold = np.random.choice(list_path_index_theshold, max_nb_crops, replace=False)
 
         t = time()
-        ## compute background density threshold
+        # compute background density threshold
         print("compute density threshold")
         density_threshold = self.st_segmentation.set_density_threshold_sequential(
             list_path_index=list_path_index_theshold,
