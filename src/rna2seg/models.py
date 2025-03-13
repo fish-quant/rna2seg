@@ -158,7 +158,7 @@ class RNA2seg(nn.Module):
             nout: int = 3,
             nbase=[32, 64, 128, 256],
             sz: int = 3,
-            diameter: int = 30,
+            # diameter: int = 30,
             flow_threshold: float = 0.9,
             min_cell_size: float = 200,
             cellbound_flow_threshold: float = 0.4,

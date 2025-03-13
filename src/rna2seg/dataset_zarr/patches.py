@@ -30,7 +30,7 @@ def create_patch_rna2seg(sdata: sd.SpatialData,
                          image_key: str,
                          points_key: str,
                          patch_width: int, patch_overlap: int,
-                         min_transcripts_per_patch: int,
+                         min_points_per_patch: int,
                          folder_patch_rna2seg: Path | str | None = None,
                          overwrite: bool = False,
                          gene_column_name: str = "gene",
@@ -49,7 +49,7 @@ def create_patch_rna2seg(sdata: sd.SpatialData,
     :type int:
     :param patch_overlap: Overlap between adjacent patches.
     :type int:
-    :param min_transcripts_per_patch: Minimum number of transcripts required for a patch.
+    :param min_points_per_patch: Minimum number of transcripts required for a patch.
     :type int:
     :param folder_patch_rna2seg: Directory where patches will be saved. If None, defaults to sdata.path/.rna2seg.
     :type Path | str | None:
@@ -90,7 +90,7 @@ def create_patch_rna2seg(sdata: sd.SpatialData,
         df=sdata[points_key],
         config_name="",
         csv_name=csv_name,
-        min_transcripts_per_patch=min_transcripts_per_patch,
+        min_points_per_patch=min_points_per_patch,
         cache_dir=folder_patch_rna2seg,
         gene_column_name=gene_column_name,
 
@@ -101,6 +101,8 @@ def create_patch_rna2seg(sdata: sd.SpatialData,
         image_key,
         shape_patch_key,
     )
+
+    return tp
 
 
 class TranscriptPatchesWithScale(OnDiskTranscriptPatches):
@@ -118,7 +120,7 @@ class TranscriptPatchesWithScale(OnDiskTranscriptPatches):
             df: dd.DataFrame | gpd.GeoDataFrame,
             config_name: str,
             csv_name: str,
-            min_transcripts_per_patch: int,
+            min_points_per_patch: int,
             cache_dir: str,
             gene_column_name: str = "gene",
     ):
@@ -130,7 +132,7 @@ class TranscriptPatchesWithScale(OnDiskTranscriptPatches):
                          )
 
         self.df = df
-        self.min_transcripts_per_patch = min_transcripts_per_patch  # to remove not use
+        self.min_points_per_patch = min_points_per_patch  # to remove not use
         self.config_name = config_name
         self.csv_name = csv_name
         self.sdata = sdata  # self.patches_2d.sdata if self.patches_2d is not None else None
