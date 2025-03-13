@@ -78,18 +78,32 @@ def test_create_patch_rna2seg():
     # MODIFY WITH YOUR PATH
 
     # load sdata and set path parameters
+
+
     sdata = sd.read_zarr(VariableTest.merfish_zarr_path)
 
+    tp = create_patch_rna2seg(sdata=sdata,
+                              image_key=VariableTest.image_key,
+                              points_key=VariableTest.points_key,
+                              patch_width=VariableTest.patch_width,
+                              patch_overlap=VariableTest.patch_overlap,
+                              min_points_per_patch=30000,
+                              folder_patch_rna2seg=VariableTest.folder_patch_rna2seg,
+                              overwrite=True)
+    assert len(list(tp.valid_indices())) == 12
+
     #create patch in the sdata and precompute transcipt.csv for each patch with sopa
-    create_patch_rna2seg(sdata=sdata,
+    tp = create_patch_rna2seg(sdata=sdata,
                          image_key=VariableTest.image_key,
                          points_key=VariableTest.points_key,
                          patch_width=VariableTest.patch_width,
                          patch_overlap=VariableTest.patch_overlap,
-                         min_transcripts_per_patch=0,
+                         min_points_per_patch=0,
                          folder_patch_rna2seg=VariableTest.folder_patch_rna2seg,
                          overwrite=True)
     print(sdata)
+
+    assert len(list(tp.valid_indices())) == 16
 
     path_cache = sdata.path / ".rna2seg_1200_150/5"
 
@@ -103,6 +117,10 @@ def test_create_patch_rna2seg():
 
     key_shape = f"sopa_patches_rna2seg_{VariableTest.patch_width}_{VariableTest.patch_overlap}"
     assert key_shape in sdata.shapes.keys()
+
+
+
+
 
 
 # check rna2seg dataset
@@ -154,6 +172,21 @@ def test_run_pretrained_rna2seg():
 
     assert len(cells) == 87
 
+    rna2seg = RNA2seg(
+        device,
+        net='unet',
+        flow_threshold=0.3,
+        cellbound_flow_threshold=0.1,
+        pretrained_model="default_pretrained",
+        min_cell_size=130
+    )
+    input_dict = dataset[6]
+    flow, cellprob, masks_pred, cells = rna2seg.run(
+        path_temp_save=VariableTest.folder_patch_rna2seg,
+        input_dict=input_dict
+    )
+    assert len(cells) == 60
+
 
     rna2seg = RNA2seg(
         device,
@@ -173,13 +206,6 @@ def test_run_pretrained_rna2seg():
 
 
 def test_rna_emb():
-    import importlib
-    import rna2seg
-    import rna2seg.models as models
-    import rna2seg.dataset_zarr as dataset_zarr
-    #importlib.reload(rna2seg)
-    #importlib.reload(models)
-    #importlib.reload(dataset_zarr)
 
     import albumentations as A
 

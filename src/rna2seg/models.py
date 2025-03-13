@@ -188,8 +188,6 @@ class RNA2seg(nn.Module):
         :type nbase: list[int]
         :param sz: Kernel size for convolutions. Defaults to 3.
         :type sz: int
-        :param diameter: Expected cell diameter in pixels. Defaults to 30.
-        :type diameter: int
         :param flow_threshold: Threshold for flow consistency during segmentation. Defaults to 0.9.
         :type flow_threshold: float
         :param min_cell_size: Minimum cell size (in pixels) to retain. Defaults to 200.
@@ -207,7 +205,6 @@ class RNA2seg(nn.Module):
         self.device = device
         self.nout = nout
         self.sz = sz
-        self.diameter = diameter
         self.flow_threshold = flow_threshold
         self.min_cell_size = min_cell_size
         self.pretrained_model = pretrained_model
@@ -517,7 +514,7 @@ class RNA2seg(nn.Module):
         if self.net_archi == "unet":
             print("initiaisation of CPnet")
             nbase = [nchan, *nbase]
-            self.net = CustomCPnet(nbase=nbase, nout=self.nout, sz=self.sz, mkldnn=False, diam_mean=self.diameter)
+            self.net = CustomCPnet(nbase=nbase, nout=self.nout, sz=self.sz, mkldnn=False) #, diam_mean=self.diameter)
         elif self.net_archi == "vmunet":
             print("initiaisation of VMUNet")
             self.net = CustomVMUnet(num_classes=self.nout, input_channels=nchan)
