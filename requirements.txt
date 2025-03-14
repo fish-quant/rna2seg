@@ -1,5 +1,5 @@
 
-
+instanseg-torch==0.0.8
 sopa>=2.0.0
 cellpose==3.0.8
 einops>=0.8.0
@@ -8,5 +8,4 @@ huggingface-hub
 torchvision>=0.12
 tensorboard>=2.16
 albumentations>=1.4
-instanseg-torch==0.0.8
 rasterio>=1.4.3

@@ -4,10 +4,6 @@
 import shutil
 import sys
 
-sys.path =['/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pydev',
-           '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/third_party/thriftpy',
-           '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pydev',
-           '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pycharm_display', '/home/tom/anaconda3/envs/rna2seg-env/lib/python310.zip', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10/lib-dynload', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10/site-packages', '/home/tom/Bureau/phd/rna_seg2paper/rna_seg_pkg/src', '/home/tom/.local/share/JetBrains/Toolbox/apps/pycharm-professional/plugins/python/helpers/pycharm_matplotlib_backend', '/home/tom/anaconda3/envs/rna2seg-env/lib/python3.10/site-packages/setuptools/_vendor', '/home/tom/Bureau/phd/rna_seg2paper', '/home/tom/Bureau/phd/rna_seg2paper/rna_seg_pkg/src']
 
 
 from pathlib import Path
