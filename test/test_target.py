@@ -50,9 +50,10 @@ def clean():
                   VariableTest.key_nucleus_consistent + "_in_cell",
                   VariableTest.key_nucleus_consistent + "_not_in_cell",
                   VariableTest.key_cell_consistent + "_without_nuclei",
+                  key_shape
                   ]
 
-    list_folder_to_remove = [VariableTest.merfish_zarr_path / f".{key_shape}",
+    list_folder_to_remove = [VariableTest.merfish_zarr_path / f".rna2seg_{patch_width}_{patch_overlap}",
                              VariableTest.folder_patch_rna2seg / f".sopa_cache",
                              VariableTest.merfish_zarr_path / f"shapes/{list_shape[0]}",
                              VariableTest.merfish_zarr_path / f"shapes/{list_shape[1]}",
