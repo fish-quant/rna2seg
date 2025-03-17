@@ -27,7 +27,7 @@ Check RNA2seg's [documentation](https://rna2seg.readthedocs.io/en/latest/) to ge
 
 ## new released 
 
-14/03/25 RNA2seg 0.0.7 :
+14/03/25 RNA2seg 0.1:
  - fix bug patch for parameter min_points_per_patch
  - remove dimater parameter in RNA2geg
  - re-order dependency
