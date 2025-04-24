@@ -1,12 +1,12 @@
-import geopandas as gpd
-import numpy as np
 import shapely
+import numpy as np
+from tqdm import tqdm
+import geopandas as gpd
 import spatialdata as sd
 from sopa.utils.utils import get_spatial_image
 from spatialdata.models import ShapesModel
 from spatialdata.transformations import get_transformation
-from tqdm import tqdm
-
+from sopa.utils.utils import to_intrinsic
 
 def compute_polygon_intersection(list_polygon_patch, list_polygon_annotation):
     tree = shapely.STRtree(list_polygon_patch)
@@ -55,6 +55,11 @@ def compute_consistent_cell(
     :return: None
 
     """
+
+    sdata[key_shape_cell_seg] = to_intrinsic(
+        sdata, sdata[key_shape_cell_seg], sdata[image_key])
+    sdata[key_shape_nuclei_seg] = to_intrinsic(
+        sdata, sdata[key_shape_nuclei_seg], sdata[image_key])
 
     if threshold_intersection_intersect is None:
         threshold_intersection_intersect = 1 - threshold_intersection_contain

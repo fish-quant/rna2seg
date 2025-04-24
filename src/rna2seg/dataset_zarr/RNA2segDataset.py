@@ -1041,7 +1041,7 @@ class RNA2segDataset(Dataset):
         ).values
         return image
 
-    def get_segmentation_img(self, bounds, key_cell, image=None, color="red", size_line=5, ):
+    def get_segmentation_img(self, bounds, key_cell, image=None, color="red", size_line=5, min_size=5):
         """
         Generates an image of cell segmentation within the specified bounds.
 
@@ -1060,6 +1060,9 @@ class RNA2segDataset(Dataset):
         """
         print("Get segmentation image ...")
 
+        self.st_segmentation.sdata[key_cell] = to_intrinsic(
+            self.st_segmentation.sdata, self.st_segmentation.sdata[key_cell], self.st_segmentation.sdata[self.st_segmentation.image_key])
+
         # Define image on which to plot the segmentation (dapi or cb)
         if image is None:
             image = self.get_staining_img(bounds)[0]  # Dapi staining if image is None
@@ -1070,7 +1073,7 @@ class RNA2segDataset(Dataset):
         # Get segmentation
         segmentation = self.st_segmentation.get_segmentation_crop(
             bounds=bounds, shape=image_with_mask.shape[0:2], key_cell=key_cell)
-        cell_contour_mask = create_cell_contours(segmentation, size_line=size_line)
+        cell_contour_mask = create_cell_contours(segmentation, min_size=min_size, size_line=size_line)
 
         image_with_mask[cell_contour_mask > 0] = mcolors.hex2color(color)
 
