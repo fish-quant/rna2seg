@@ -436,6 +436,7 @@ class RNA2segDataset(Dataset):
             shape_patch_key=shape_patch_key,
         )
         self.st_segmentation = st_segmentation
+        self.st_segmentation.density_threshold = density_threshold # dummy to remove
 
         self.min_nb_cell_per_patch = min_nb_cell_per_patch
         self.list_patch_index = list_patch_index
@@ -528,12 +529,13 @@ class RNA2segDataset(Dataset):
             if patch_width is None:
                 import re
                 patch_width = re.search(r"sopa_patches_rna2seg_(\d+)_", shape_patch_key)
-            self._set_threshold(
-                max_nb_crops=500,
-                kernel_size=9,
-                percentile_threshold=5,
-                shape=(patch_width, patch_width)
-            )
+            if self.st_segmentation.density_threshold is None:
+                self._set_threshold(
+                    max_nb_crops=500,
+                    kernel_size=9,
+                    percentile_threshold=5,
+                    shape=(patch_width, patch_width)
+                )
 
     def __len__(self):
         return len(self.list_patch_index)
@@ -977,6 +979,7 @@ class RNA2segDataset(Dataset):
             percentile_threshold=percentile_threshold,
         )
         print(f"Time to compute density threshold: {time() - t:.6f}s")
+        print(f"Density threshold: {density_threshold}")
 
         self.st_segmentation.density_threshold = density_threshold
 

@@ -285,7 +285,8 @@ class StainingTranscriptSegmentation(StainingSegmentation):
             list_path_index = list(range(len(self.sdata[self.shape_patch_key].geometry)))
 
         non_empty_list_path_index = []
-        for patch_index in tqdm(list_path_index, file=sys.stdout):
+        # compute valid patches
+        for patch_index in tqdm(list_path_index, file=sys.stdout, desc="Get valid patches"):
             patch = self.sdata[self.shape_patch_key].geometry[patch_index]
             bounds = [int(x) for x in patch.bounds]
             if check_border:

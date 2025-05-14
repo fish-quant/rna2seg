@@ -1,11 +1,10 @@
 
 instanseg-torch==0.0.8
-sopa>=2.0.0
+sopa==2.0.3
 cellpose==3.0.8
-einops>=0.8.0
-xarray>=2024.10.0
-huggingface-hub
-torchvision>=0.12
-tensorboard>=2.16
-albumentations>=1.4
-rasterio>=1.4.3
+einops==0.8.1
+xarray== 2024.11.0
+torchvision==0.20.1
+tensorboard==2.19.0
+albumentations==1.4.21
+rasterio==1.4.3
