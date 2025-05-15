@@ -26,6 +26,8 @@ def compute_consistent_cell(
         accepted_nb_nuclei_per_cell: set = {1},
         max_cell_nb_intersecting_nuclei: int = 1,
         key_unconsistent_cell: str | None = None,
+        shape_in_intrinsic: bool = True,
+
 ):
     """
 
@@ -51,15 +53,17 @@ def compute_consistent_cell(
     :type set
     :param threshold_intersection_intersect: threshold of intersection apply as follow: a cell is considered as in the
     intersection with a nuclei if cell.intersection(nucleus).area >= threshold_intersection_intersect * nucleus.area
+    :param shape_in_intrinsic: if True, the shape are in intrinsic coordinates, if False, not in intrinsic coordinates
+     and are save in intrinsic coordinates
     :type float
     :return: None
-
     """
 
-    #sdata[key_shape_cell_seg] = to_intrinsic(
-    #    sdata, sdata[key_shape_cell_seg], sdata[image_key])
-    #sdata[key_shape_nuclei_seg] = to_intrinsic(
-    #    sdata, sdata[key_shape_nuclei_seg], sdata[image_key])
+    if not shape_in_intrinsic:
+        sdata[key_shape_cell_seg] = to_intrinsic(
+            sdata, sdata[key_shape_cell_seg], sdata[image_key])
+        sdata[key_shape_nuclei_seg] = to_intrinsic(
+            sdata, sdata[key_shape_nuclei_seg], sdata[image_key])
 
     if threshold_intersection_intersect is None:
         threshold_intersection_intersect = 1 - threshold_intersection_contain
