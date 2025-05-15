@@ -56,10 +56,10 @@ def compute_consistent_cell(
 
     """
 
-    sdata[key_shape_cell_seg] = to_intrinsic(
-        sdata, sdata[key_shape_cell_seg], sdata[image_key])
-    sdata[key_shape_nuclei_seg] = to_intrinsic(
-        sdata, sdata[key_shape_nuclei_seg], sdata[image_key])
+    #sdata[key_shape_cell_seg] = to_intrinsic(
+    #    sdata, sdata[key_shape_cell_seg], sdata[image_key])
+    #sdata[key_shape_nuclei_seg] = to_intrinsic(
+    #    sdata, sdata[key_shape_nuclei_seg], sdata[image_key])
 
     if threshold_intersection_intersect is None:
         threshold_intersection_intersect = 1 - threshold_intersection_contain
